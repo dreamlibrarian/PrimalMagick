@@ -6,7 +6,7 @@ buildscript {
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
-        classpath group: 'com.palantir.gradle.gitversion', name: 'gradle-git-version', version: '0.11.0'
+        classpath group: 'com.palantir.gradle.gitversion', name: 'gradle-git-version', version: '0.12.2'
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
