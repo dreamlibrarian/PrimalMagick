@@ -8,6 +8,12 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@master
+      - uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
       - name: Build the artifacts
         run: ./gradlew build
       - name: Upload the artifacts
