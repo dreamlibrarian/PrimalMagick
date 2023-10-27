@@ -36,7 +36,7 @@ public class DataPackUtils {
         {
             "pack": {
               "description": "Primal Magick ModPack Base Item Affinities",
-              "pack_format": 15
+              "pack_format": 9
             }
         }
     """;
