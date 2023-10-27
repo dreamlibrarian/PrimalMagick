@@ -759,7 +759,7 @@ public class PrimalMagickCommand {
 
 
                 SourceList sources = am.getAffinityValues(stack, level);
-                if (sources.isEmpty()){
+                if (sources == null || sources.isEmpty()){
                     if (getRecipeCountForItem(recipeManager, registryAccess, item) == 0) {
                         items.add(item);
                     }
