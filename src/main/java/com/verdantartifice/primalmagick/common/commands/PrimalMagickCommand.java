@@ -63,6 +63,7 @@ import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
@@ -188,8 +189,8 @@ public class PrimalMagickCommand {
             .then(Commands.literal("affinities")
                 .then(Commands.literal("lint")
                     // By default, invoke excluding vanilla and PM items on the assumption they should be in the intended place.
-                    .executes((context) -> {return getSourcelessItems(context.getSource(), Arrays.asList("minecraft", "primalmagick"));})
-                    .then(Commands.literal("all").executes((context) -> {return getSourcelessItems(context.getSource(),null);}))
+                    .executes((context) -> {return getSourcelessItemsAndEntities(context.getSource(), Arrays.asList("minecraft", "primalmagick"));})
+                    .then(Commands.literal("all").executes((context) -> {return getSourcelessItemsAndEntities(context.getSource(),null);}))
                 )
                 .then(Commands.literal("generateDatapack")
                     // By default, invoke excluding vanilla and PM items on the assumption they should be in the intended places.
@@ -663,7 +664,7 @@ public class PrimalMagickCommand {
      * getSourcelessItems iterates all item recipes and reports a JSON list of any that render to 0 sources.
      * Intended to assist with modpack linting.
      */
-    private static int getSourcelessItems(CommandSourceStack source, Collection<String> excludeNamespaces) {
+    private static int getSourcelessItemsAndEntities(CommandSourceStack source, Collection<String> excludeNamespaces) {
 
         Logger LOGGER = LogManager.getLogger();
 
@@ -680,13 +681,15 @@ public class PrimalMagickCommand {
         RegistryAccess registryAccess = source.registryAccess();
 
         List<Item> sourcelessItems = listSourcelessItems(recipeManager, registryAccess, level, excludeNamespaces);
+        List<EntityType<?>> sourcelessEntities = listSourcelessEntityTypes(registryAccess, excludeNamespaces);
+
 
         String excludeNote = "";
         if ( (excludeNamespaces != null) && (excludeNamespaces.size() >0)) {
             excludeNote = " excluding resource namespaces: "+ String.join(", ", excludeNamespaces);
         }
 
-        target.sendMessage(new TextComponent("Found " + Integer.toString(sourcelessItems.size()) + " items without sources"+ excludeNote + "; check system logs for details"), Util.NIL_UUID);
+        target.sendMessage(new TextComponent("Found " + Integer.toString(sourcelessItems.size()) + " items and "+ Integer.toString(sourcelessEntities.size())+ "entities without sources"+ excludeNote + "; check system logs for details"), Util.NIL_UUID);
 
         // note: technically this could result in a list with null elements. which is noncommunicative.
         LOGGER.info("Items with no sources: " + sourcelessItems.stream().map(item -> ForgeRegistries.ITEMS.getKey(item)).toList().toString());
@@ -709,10 +712,11 @@ public class PrimalMagickCommand {
         RegistryAccess registryAccess = source.registryAccess();
 
         List<Item> sourcelessItems = listSourcelessItems(recipeManager, registryAccess, level, excludeNamespaces);
+        List<EntityType<?>> sourcelessEntities = listSourcelessEntityTypes(registryAccess, excludeNamespaces);
 
         byte[] itemsToDataPackTemplate;
         try {
-            itemsToDataPackTemplate = DataPackUtils.ItemsToDataPackTemplate(sourcelessItems);
+            itemsToDataPackTemplate = DataPackUtils.ItemsToDataPackTemplate(sourcelessItems,sourcelessEntities);
         } catch (IOException e){
             LOGGER.atError().withThrowable(e).log("unable to generate datapack");
             return 1;
@@ -728,7 +732,7 @@ public class PrimalMagickCommand {
             fos.close();
 
             // Being very careful not to make this a tool for users to use to enumerate server attributes.
-            target.sendMessage(new TextComponent("Wrote datapack template for sourceless items to disk; check system logs for location."), Util.NIL_UUID);
+            target.sendMessage(new TextComponent("Wrote datapack template for sourceless items and entities to disk; check system logs for location."), Util.NIL_UUID);
             LOGGER.atInfo().log("Wrote Datapack to "+ filePath );
         } catch (IOException e) {
             LOGGER.atError().withThrowable(e).log("unable to write datapack");
@@ -759,7 +763,7 @@ public class PrimalMagickCommand {
 
 
                 SourceList sources = am.getAffinityValues(stack, level);
-                if (sources.isEmpty()){
+                if (sources == null || sources.isEmpty()){
                     if (getRecipeCountForItem(recipeManager, registryAccess, item) == 0) {
                         items.add(item);
                     }
@@ -768,6 +772,32 @@ public class PrimalMagickCommand {
         );
 
         return items;
+    }
+
+    private static List<EntityType<?>> listSourcelessEntityTypes(RegistryAccess registryAccess, Collection<String> excludeNamespaces) {
+        AffinityManager am = AffinityManager.getInstance();
+        Vector<EntityType<?>> retVal = new Vector<>();
+
+        ForgeRegistries.ENTITIES.forEach(entityType -> {
+            ResourceLocation resourceLocation = ForgeRegistries.ENTITIES.getKey(entityType);
+            if (resourceLocation == null) {
+                // If the Item can't be resolved in registry, it's got problems I can't care about.
+                return;
+            }
+            String namespace = resourceLocation.getNamespace();
+            if (excludeNamespaces != null && excludeNamespaces.contains(namespace)) {
+                return;
+            }
+
+
+            SourceList sources = am.getAffinityValues(entityType);
+
+			if (sources == null || sources.isEmpty()) {
+				retVal.add(entityType);
+			}
+        });
+
+        return retVal;
     }
 
     private static long getRecipeCountForItem(net.minecraft.world.item.crafting.RecipeManager recipeManager, RegistryAccess registryAccess, Item item){
