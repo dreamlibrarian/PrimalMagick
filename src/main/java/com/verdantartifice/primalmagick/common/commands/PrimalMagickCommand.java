@@ -189,8 +189,8 @@ public class PrimalMagickCommand {
             .then(Commands.literal("affinities")
                 .then(Commands.literal("lint")
                     // By default, invoke excluding vanilla and PM items on the assumption they should be in the intended place.
-                    .executes((context) -> {return getSourcelessItems(context.getSource(), Arrays.asList("minecraft", "primalmagick"));})
-                    .then(Commands.literal("all").executes((context) -> {return getSourcelessItems(context.getSource(),null);}))
+                    .executes((context) -> {return getSourcelessItemsAndEntities(context.getSource(), Arrays.asList("minecraft", "primalmagick"));})
+                    .then(Commands.literal("all").executes((context) -> {return getSourcelessItemsAndEntities(context.getSource(),null);}))
                 )
                 .then(Commands.literal("generateDatapack")
                     // By default, invoke excluding vanilla and PM items on the assumption they should be in the intended places.
