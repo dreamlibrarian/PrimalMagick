@@ -689,7 +689,7 @@ public class PrimalMagickCommand {
             excludeNote = " excluding resource namespaces: "+ String.join(", ", excludeNamespaces);
         }
 
-        target.sendMessage(new TextComponent("Found " + Integer.toString(sourcelessItems.size()) + " items and "+ Integer.toString(sourcelessEntities.size())+ "entities without sources"+ excludeNote + "; check system logs for details"), Util.NIL_UUID);
+        target.sendMessage(new TextComponent("Found " + Integer.toString(sourcelessItems.size()) + " items and "+ Integer.toString(sourcelessEntities.size())+ " entities without sources"+ excludeNote + "; check system logs for details"), Util.NIL_UUID);
 
         // note: technically this could result in a list with null elements. which is noncommunicative.
         LOGGER.info("Items with no sources: " + sourcelessItems.stream().map(item -> ForgeRegistries.ITEMS.getKey(item)).toList().toString());
