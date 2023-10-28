@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public class DataPackUtils {
@@ -30,6 +31,7 @@ public class DataPackUtils {
      */
 
     static String itemFilePrefix = "data/primalmagick/affinities/items/";
+    static String entityFilePrefix = "data/primalmagick/affinities/entity_types/";
 
     static String packMCMetaFilename = "pack.mcmeta";
     static String packMCMeta = """
@@ -61,9 +63,25 @@ public class DataPackUtils {
               "target": "%s"
             }
         """;
+    static String entityTemplate = """
+            { "type": "entity_type",
+              "values": {
+                "earth": 0,
+                "sun": 0,
+                "moon": 0,
+                "sky": 0,
+                "sea": 0,
+                "blood": 0,
+                "infernal": 0,
+                "void": 0,
+                "hallowed": 0
+              },
+              "target": "%s"
+            }
+        """;
         // /SPOILERS. nyah.
 
-    public static byte[] ItemsToDataPackTemplate(List<Item> sourceItems) throws IOException{
+    public static byte[] ItemsToDataPackTemplate(List<Item> sourceItems, List<EntityType<?>> sourceEntities) throws IOException{
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ZipOutputStream zos = new ZipOutputStream(bos);
@@ -84,6 +102,19 @@ public class DataPackUtils {
                 z = new ZipEntry(itemFilePrefix + filename);
                 zos.putNextEntry(z);
                 zos.write(String.format(itemTemplate, target).getBytes());
+                zos.closeEntry();
+            }
+        }
+
+        for (EntityType<?> entityType : sourceEntities) {
+            ResourceLocation resourceLocation = ForgeRegistries.ENTITIES.getKey(entityType);
+            if (resourceLocation != null) {
+                String target = resourceLocation.toString();
+                String filename = target.replace(":", "_") + ".json";
+
+                z = new ZipEntry(entityFilePrefix + filename);
+                zos.putNextEntry(z);
+                zos.write(String.format(entityTemplate, target).getBytes());
                 zos.closeEntry();
             }
         }
