@@ -17,6 +17,11 @@ PrimalMagick derives affinities for items from their recipes; for base items tha
 
 The below commands will make generating these affinities correctly easier when run inside a minecraft instance with PrimalMagic and your mod(s).
 
+*Notes:* 
+* These commands can impact user experience on multiuser servers, so consider running these commands on a single-player installation.
+* For security reasons, these commands require access to the filesystem and log file for the minecraft process.
+
+*Commands:*
 /pm affinities lint [all] - iterates over all items to identify which have no sources and logs a list of items that resolve to empty sourceLists in ResourceLocation (mod:itemname) form. Also sends a message to the triggering player with a count of items missing sources. By default, will skip over any entities in minecraft and primalmagick namespaces, on the theory that the mod owner owns the task of maintaining those.
 
 /pm affinities generateDatapack [all] - Performs the same task as above, including skipping minecraft and primalmagick namespaces by default, then writes a datapack to disk in the configured java temp directory containing all the affected items. The path to the file is written to system logs.
