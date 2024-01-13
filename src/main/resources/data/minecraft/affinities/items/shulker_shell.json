@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:shulker_shell",
-  "set": {
-    "blood": 5,
-    "void": 5
-  }
-}

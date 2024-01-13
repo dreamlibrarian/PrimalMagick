@@ -6,13 +6,12 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
 import com.verdantartifice.primalmagick.client.gui.widgets.grimoire.DisciplineButton;
 import com.verdantartifice.primalmagick.common.research.ResearchDiscipline;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 
 /**
  * Grimoire page showing the list of available disciplines.
@@ -45,15 +44,15 @@ public class DisciplineIndexPage extends AbstractPage {
     }
     
     @Override
-    protected String getTitleTranslationKey() {
-        return "primalmagick.grimoire.index_header";
+    protected Component getTitleText() {
+        return Component.translatable("grimoire.primalmagick.index_header");
     }
 
     @Override
-    public void render(PoseStack matrixStack, int side, int x, int y, int mouseX, int mouseY) {
+    public void render(GuiGraphics guiGraphics, int side, int x, int y, int mouseX, int mouseY) {
         // Just render the title; buttons have already been added
         if (this.isFirstPage() && side == 0) {
-            this.renderTitle(matrixStack, side, x, y, mouseX, mouseY, null);
+            this.renderTitle(guiGraphics, side, x, y, mouseX, mouseY, null);
         }
     }
     
@@ -61,9 +60,9 @@ public class DisciplineIndexPage extends AbstractPage {
     public void initWidgets(GrimoireScreen screen, int side, int x, int y) {
         // Add a button to the screen for each discipline in the page contents
         for (ResearchDiscipline discipline : this.getDisciplines()) {
-            Component text = new TranslatableComponent(discipline.getNameTranslationKey());
-            screen.addWidgetToScreen(new DisciplineButton(x + 12 + (side * 140), y, text, screen, discipline));
-            y += 12;
+            Component text = Component.translatable(discipline.getNameTranslationKey());
+            DisciplineButton button = screen.addWidgetToScreen(new DisciplineButton(x + 12 + (side * 140), y, text, screen, discipline, true, true));
+            y += button.getHeight();
         }
     }
 }

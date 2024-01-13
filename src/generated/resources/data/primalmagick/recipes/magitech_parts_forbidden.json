@@ -1,0 +1,32 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "group": "magitech_parts",
+  "key": {
+    "I": {
+      "tag": "primalmagick:ingots/hexium"
+    },
+    "P": {
+      "item": "primalmagick:magitech_parts_enchanted"
+    },
+    "S": {
+      "item": "primalmagick:mana_salts"
+    }
+  },
+  "mana": {
+    "sources": {
+      "blood": 50,
+      "infernal": 50,
+      "void": 50
+    }
+  },
+  "pattern": [
+    "SIS",
+    "IPI",
+    "SIS"
+  ],
+  "research": "MASTER_MAGITECH",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:magitech_parts_forbidden"
+  }
+}

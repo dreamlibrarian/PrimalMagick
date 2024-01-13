@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:blast_protection",
-  "multiplier": {
-    "moon": 1
-  }
-}

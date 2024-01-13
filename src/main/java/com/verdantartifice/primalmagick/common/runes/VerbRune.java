@@ -1,8 +1,11 @@
 package com.verdantartifice.primalmagick.common.runes;
 
+import java.util.function.Supplier;
+
 import javax.annotation.Nonnull;
 
-import net.minecraft.resources.ResourceLocation;
+import com.verdantartifice.primalmagick.common.research.ResearchName;
+
 import net.minecraft.world.item.Rarity;
 
 /**
@@ -11,12 +14,8 @@ import net.minecraft.world.item.Rarity;
  * @author Daedalus4096
  */
 public class VerbRune extends Rune {
-    public VerbRune(@Nonnull String tag) {
-        super(tag, Rarity.COMMON, false);
-    }
-    
-    public VerbRune(@Nonnull ResourceLocation id) {
-        super(id, Rarity.COMMON, false);
+    public VerbRune(@Nonnull String tag, @Nonnull Supplier<ResearchName> discoveryKey) {
+        super(tag, discoveryKey, Rarity.COMMON, false, -1);
     }
     
     @Override

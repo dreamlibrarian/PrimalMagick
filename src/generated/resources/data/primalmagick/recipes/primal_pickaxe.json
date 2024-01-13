@@ -1,0 +1,51 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "primalmagick:primalite_pickaxe"
+    },
+    {
+      "item": "primalmagick:essence_shard_moon"
+    },
+    {
+      "item": "primalmagick:essence_shard_moon"
+    },
+    {
+      "item": "primalmagick:rune_moon"
+    },
+    {
+      "item": "primalmagick:mana_prism"
+    },
+    {
+      "item": "primalmagick:mana_salts"
+    }
+  ],
+  "instability": 3,
+  "mana": {
+    "sources": {
+      "moon": 40
+    }
+  },
+  "props": [
+    {
+      "block": "primalmagick:ritual_lectern"
+    },
+    {
+      "block": "primalmagick:incense_brazier"
+    }
+  ],
+  "research": "PRIMAL_PICKAXE",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:primal_pickaxe",
+    "tag": {
+      "Damage": 0,
+      "Enchantments": [
+        {
+          "id": "primalmagick:lucky_strike",
+          "lvl": 2
+        }
+      ]
+    }
+  }
+}

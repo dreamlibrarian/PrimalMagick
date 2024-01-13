@@ -1,13 +1,12 @@
 package com.verdantartifice.primalmagick.client.gui.widgets.grimoire;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
-import com.verdantartifice.primalmagick.client.util.GuiUtils;
+import com.verdantartifice.primalmagick.common.attunements.AttunementManager;
 import com.verdantartifice.primalmagick.common.attunements.AttunementThreshold;
 import com.verdantartifice.primalmagick.common.items.ItemsPM;
 import com.verdantartifice.primalmagick.common.sources.Source;
@@ -15,15 +14,18 @@ import com.verdantartifice.primalmagick.common.wands.WandCap;
 import com.verdantartifice.primalmagick.common.wands.WandCore;
 import com.verdantartifice.primalmagick.common.wands.WandGem;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 /**
  * Display widget for showing attunement threshold bonuses.
@@ -36,40 +38,46 @@ public class AttunementThresholdWidget extends AbstractWidget {
         ItemsPM.MODULAR_WAND.get().setWandCap(stack, WandCap.IRON);
         ItemsPM.MODULAR_WAND.get().setWandGem(stack, WandGem.APPRENTICE);
     });
+    protected static final ItemStack SHACKLED_OVERLAY_STACK = new ItemStack(Items.BARRIER);
     
     protected final Source source;
     protected final AttunementThreshold threshold;
+    protected final boolean suppressed;
     protected final ResourceLocation texture;
-    protected final Component tooltipText;
     
     public AttunementThresholdWidget(@Nonnull Source source, @Nonnull AttunementThreshold threshold, int x, int y) {
-        super(x, y, 18, 18, TextComponent.EMPTY);
+        super(x, y, 18, 18, Component.empty());
         this.source = source;
         this.threshold = threshold;
-        this.texture = new ResourceLocation(PrimalMagick.MODID, "textures/attunements/threshold_" + source.getTag() + "_" + threshold.getTag() + ".png");
-        this.tooltipText = new TranslatableComponent("primalmagick.attunement.threshold." + source.getTag() + "." + threshold.getTag());
+        Minecraft mc = Minecraft.getInstance();
+        this.suppressed = AttunementManager.isSuppressed(mc.player, source);
+        this.texture = PrimalMagick.resource("textures/attunements/threshold_" + source.getTag() + "_" + threshold.getTag() + ".png");
+        List<Component> lines = new ArrayList<>();
+        lines.add(Component.translatable(String.join(".", "attunement_threshold", PrimalMagick.MODID, threshold.getTag(), source.getTag())));
+        if (this.suppressed) {
+            lines.add(Component.translatable("tooltip.primalmagick.attunement_shackles.shackled").withStyle(ChatFormatting.RED));
+        }
+        this.setTooltip(Tooltip.create(CommonComponents.joinLines(lines)));
     }
     
     @Override
-    public void renderButton(PoseStack matrixStack, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
-        Minecraft mc = Minecraft.getInstance();
-        
+    public void renderWidget(GuiGraphics guiGraphics, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
         if (this.threshold == AttunementThreshold.MINOR) {
             // Render casting wand into GUI
-            mc.getItemRenderer().renderGuiItem(WAND_STACK, this.x + 1, this.y + 1);
+            guiGraphics.renderItem(WAND_STACK, this.getX() + 1, this.getY() + 1);
         } else {
             // Render the icon appropriate for this widget's source and threshold
-            matrixStack.pushPose();
-            RenderSystem.setShaderTexture(0, this.texture);
-            matrixStack.translate(this.x, this.y, 0.0F);
-            matrixStack.scale(0.0703125F, 0.0703125F, 0.0703125F);
-            this.blit(matrixStack, 0, 0, 0, 0, 255, 255);
-            matrixStack.popPose();
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(this.getX(), this.getY(), 0.0F);
+            guiGraphics.pose().scale(0.0703125F, 0.0703125F, 0.0703125F);
+            guiGraphics.blit(this.texture, 0, 0, 0, 0, 255, 255);
+            guiGraphics.pose().popPose();
         }
-        
-        if (this.isHoveredOrFocused()) {
-            // Render tooltip
-            GuiUtils.renderCustomTooltip(matrixStack, Collections.singletonList(this.tooltipText), this.x, this.y);
+        if (this.suppressed) {
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(this.getX() + 1, this.getY() + 1, 1.0F);
+            guiGraphics.renderItem(SHACKLED_OVERLAY_STACK, 0, 0);
+            guiGraphics.pose().popPose();
         }
     }
     
@@ -80,6 +88,6 @@ public class AttunementThresholdWidget extends AbstractWidget {
     }
 
     @Override
-    public void updateNarration(NarrationElementOutput output) {
+    public void updateWidgetNarration(NarrationElementOutput output) {
     }
 }

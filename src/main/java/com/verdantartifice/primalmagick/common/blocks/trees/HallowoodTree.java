@@ -1,12 +1,11 @@
 package com.verdantartifice.primalmagick.common.blocks.trees;
 
-import java.util.Random;
+import com.verdantartifice.primalmagick.common.worldgen.features.ConfiguredFeaturesPM;
 
-import com.verdantartifice.primalmagick.common.worldgen.features.TreeFeaturesPM;
-
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.grower.AbstractTreeGrower;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
-import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
 
 /**
  * Definition for a hallowood tree.  Used by hallowood saplings to spawn the hallowood tree worldgen feature.
@@ -15,7 +14,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.TreeConfigurati
  */
 public class HallowoodTree extends AbstractTreeGrower {
     @Override
-    protected ConfiguredFeature<TreeConfiguration, ?> getConfiguredFeature(Random randomIn, boolean largeHive) {
-        return TreeFeaturesPM.TREE_HALLOWOOD;
+    protected ResourceKey<ConfiguredFeature<?, ?>> getConfiguredFeature(RandomSource randomIn, boolean largeHive) {
+        return ConfiguredFeaturesPM.TREE_HALLOWOOD;
     }
 }

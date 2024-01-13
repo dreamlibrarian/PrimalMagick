@@ -4,14 +4,16 @@ import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
 import com.verdantartifice.primalmagick.client.gui.widgets.grimoire.ManaCostSummaryWidget;
 import com.verdantartifice.primalmagick.common.crafting.ShapelessArcaneRecipe;
 
+import net.minecraft.core.RegistryAccess;
+
 /**
  * Grimoire page showing a shapeless arcane recipe.
  * 
  * @author Daedalus4096
  */
 public class ShapelessArcaneRecipePage extends AbstractShapelessRecipePage<ShapelessArcaneRecipe> {
-    public ShapelessArcaneRecipePage(ShapelessArcaneRecipe recipe) {
-        super(recipe);
+    public ShapelessArcaneRecipePage(ShapelessArcaneRecipe recipe, RegistryAccess registryAccess) {
+        super(recipe, registryAccess);
     }
     
     @Override
@@ -29,6 +31,6 @@ public class ShapelessArcaneRecipePage extends AbstractShapelessRecipePage<Shape
 
     @Override
     protected String getRecipeTypeTranslationKey() {
-        return "primalmagick.grimoire.shapeless_arcane_recipe_header";
+        return "grimoire.primalmagick.shapeless_arcane_recipe_header";
     }
 }

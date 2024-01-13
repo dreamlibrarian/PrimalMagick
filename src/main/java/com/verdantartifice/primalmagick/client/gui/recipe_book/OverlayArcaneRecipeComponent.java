@@ -9,25 +9,29 @@ import javax.annotation.Nullable;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.verdantartifice.primalmagick.common.containers.AbstractArcaneRecipeBookMenu;
 import com.verdantartifice.primalmagick.common.crafting.recipe_book.ArcaneRecipeBook;
+import com.verdantartifice.primalmagick.common.menus.base.IArcaneRecipeBookMenu;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Widget;
+import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.recipebook.PlaceRecipe;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
-public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget, GuiEventListener {
-    protected static final ResourceLocation RECIPE_BOOK_LOCATION = new ResourceLocation("textures/gui/recipe_book.png");
+public class OverlayArcaneRecipeComponent implements Renderable, GuiEventListener {
+    private static final ResourceLocation OVERLAY_RECIPE_SPRITE = new ResourceLocation("recipe_book/overlay_recipe");
+    protected static final WidgetSprites CRAFTING_OVERLAY_SPRITES = new WidgetSprites(new ResourceLocation("recipe_book/crafting_overlay"), new ResourceLocation("recipe_book/crafting_overlay_disabled"), new ResourceLocation("recipe_book/crafting_overlay_highlighted"), new ResourceLocation("recipe_book/crafting_overlay_disabled_highlighted"));
+    protected static final WidgetSprites FURNACE_OVERLAY_SPRITES = new WidgetSprites(new ResourceLocation("recipe_book/furnace_overlay"), new ResourceLocation("recipe_book/furnace_overlay_disabled"), new ResourceLocation("recipe_book/furnace_overlay_highlighted"), new ResourceLocation("recipe_book/furnace_overlay_disabled_highlighted"));
     protected static final int MAX_ROW = 4;
     protected static final int MAX_ROW_LARGE = 5;
     protected static final float ITEM_RENDER_SCALE = 0.375F;
@@ -39,7 +43,7 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
     protected Minecraft mc;
     protected ArcaneRecipeCollection collection;
     @Nullable
-    protected Recipe<?> lastRecipeClicked;
+    protected RecipeHolder<?> lastRecipeClicked;
     protected float time;
     protected boolean useFurnaceStyle;
     
@@ -47,15 +51,15 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
         this.mc = mc;
         this.collection = recipeCollection;
         boolean isFiltering = false;
-        if (mc.player.containerMenu instanceof AbstractArcaneRecipeBookMenu<?> arcaneMenu) {
+        if (mc.player.containerMenu instanceof IArcaneRecipeBookMenu<?> arcaneMenu) {
             this.useFurnaceStyle = arcaneMenu.isSingleIngredientMenu();
             isFiltering = book.isFiltering(arcaneMenu.getRecipeBookType());
         } else {
             this.useFurnaceStyle = false;
         }
         
-        List<Recipe<?>> visibleRecipes = this.collection.getDisplayRecipes(true);
-        List<Recipe<?>> invisibleRecipes = isFiltering ? Collections.emptyList() : this.collection.getDisplayRecipes(false);
+        List<RecipeHolder<?>> visibleRecipes = this.collection.getDisplayRecipes(true);
+        List<RecipeHolder<?>> invisibleRecipes = isFiltering ? Collections.emptyList() : this.collection.getDisplayRecipes(false);
         int visibleSize = visibleRecipes.size();
         int totalSize = visibleSize + invisibleRecipes.size();
         int maxRowSize = (totalSize <= 16) ? MAX_ROW : MAX_ROW_LARGE;
@@ -86,7 +90,7 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
         
         for (int index = 0; index < totalSize; index++) {
             boolean isVisible = index < visibleSize;
-            Recipe<?> recipe = isVisible ? visibleRecipes.get(index) : invisibleRecipes.get(index - visibleSize);
+            RecipeHolder<?> recipe = isVisible ? visibleRecipes.get(index) : invisibleRecipes.get(index - visibleSize);
             int slotX = this.x + 4 + 25 * (index % maxRowSize);
             int slotY = this.y + 5 + 25 * (index / maxRowSize);
             if (this.useFurnaceStyle) {
@@ -99,17 +103,12 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
         this.lastRecipeClicked = null;
     }
 
-    @Override
-    public boolean changeFocus(boolean focus) {
-        return false;
-    }
-
     public ArcaneRecipeCollection getRecipeCollection() {
         return this.collection;
     }
 
     @Nullable
-    public Recipe<?> getLastRecipeClicked() {
+    public RecipeHolder<?> getLastRecipeClicked() {
         return this.lastRecipeClicked;
     }
 
@@ -134,60 +133,28 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
     }
 
     @Override
-    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (this.isVisible) {
             this.time += partialTicks;
             RenderSystem.enableBlend();
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            RenderSystem.setShaderTexture(0, RECIPE_BOOK_LOCATION);
-            poseStack.pushPose();
-            poseStack.translate(0.0D, 0.0D, 170.0D);
+            guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(0.0D, 0.0D, 170.0D);
             
             int maxRowSize = (this.recipeButtons.size() <= 16) ? MAX_ROW : MAX_ROW_LARGE;
             int colCount = Math.min(this.recipeButtons.size(), maxRowSize);
             int rowCount = Mth.ceil((float)this.recipeButtons.size() / (float)maxRowSize);
-            this.nineInchSprite(poseStack, colCount, rowCount, 24, 4, 82, 208);
+            guiGraphics.blitSprite(OVERLAY_RECIPE_SPRITE, this.x, this.y, colCount * 25 + 8, rowCount * 25 + 8);
             RenderSystem.disableBlend();
 
             for (OverlayArcaneRecipeComponent.OverlayArcaneRecipeButton recipeButton : this.recipeButtons) {
-                recipeButton.render(poseStack, mouseX, mouseY, partialTicks);
+                recipeButton.render(guiGraphics, mouseX, mouseY, partialTicks);
             }
             
-            poseStack.popPose();
+            guiGraphics.pose().popPose();
         }
     }
 
-    private void nineInchSprite(PoseStack p_100214_, int p_100215_, int p_100216_, int p_100217_, int p_100218_, int p_100219_, int p_100220_) {
-        this.blit(p_100214_, this.x, this.y, p_100219_, p_100220_, p_100218_, p_100218_);
-        this.blit(p_100214_, this.x + p_100218_ * 2 + p_100215_ * p_100217_, this.y, p_100219_ + p_100217_ + p_100218_, p_100220_, p_100218_, p_100218_);
-        this.blit(p_100214_, this.x, this.y + p_100218_ * 2 + p_100216_ * p_100217_, p_100219_, p_100220_ + p_100217_ + p_100218_, p_100218_, p_100218_);
-        this.blit(p_100214_, this.x + p_100218_ * 2 + p_100215_ * p_100217_, this.y + p_100218_ * 2 + p_100216_ * p_100217_, p_100219_ + p_100217_ + p_100218_, p_100220_ + p_100217_ + p_100218_, p_100218_, p_100218_);
-
-        for(int i = 0; i < p_100215_; ++i) {
-            this.blit(p_100214_, this.x + p_100218_ + i * p_100217_, this.y, p_100219_ + p_100218_, p_100220_, p_100217_, p_100218_);
-            this.blit(p_100214_, this.x + p_100218_ + (i + 1) * p_100217_, this.y, p_100219_ + p_100218_, p_100220_, p_100218_, p_100218_);
-
-            for(int j = 0; j < p_100216_; ++j) {
-                if (i == 0) {
-                    this.blit(p_100214_, this.x, this.y + p_100218_ + j * p_100217_, p_100219_, p_100220_ + p_100218_, p_100218_, p_100217_);
-                    this.blit(p_100214_, this.x, this.y + p_100218_ + (j + 1) * p_100217_, p_100219_, p_100220_ + p_100218_, p_100218_, p_100218_);
-                }
-
-                this.blit(p_100214_, this.x + p_100218_ + i * p_100217_, this.y + p_100218_ + j * p_100217_, p_100219_ + p_100218_, p_100220_ + p_100218_, p_100217_, p_100217_);
-                this.blit(p_100214_, this.x + p_100218_ + (i + 1) * p_100217_, this.y + p_100218_ + j * p_100217_, p_100219_ + p_100218_, p_100220_ + p_100218_, p_100218_, p_100217_);
-                this.blit(p_100214_, this.x + p_100218_ + i * p_100217_, this.y + p_100218_ + (j + 1) * p_100217_, p_100219_ + p_100218_, p_100220_ + p_100218_, p_100217_, p_100218_);
-                this.blit(p_100214_, this.x + p_100218_ + (i + 1) * p_100217_ - 1, this.y + p_100218_ + (j + 1) * p_100217_ - 1, p_100219_ + p_100218_, p_100220_ + p_100218_, p_100218_ + 1, p_100218_ + 1);
-                if (i == p_100215_ - 1) {
-                    this.blit(p_100214_, this.x + p_100218_ * 2 + p_100215_ * p_100217_, this.y + p_100218_ + j * p_100217_, p_100219_ + p_100217_ + p_100218_, p_100220_ + p_100218_, p_100218_, p_100217_);
-                    this.blit(p_100214_, this.x + p_100218_ * 2 + p_100215_ * p_100217_, this.y + p_100218_ + (j + 1) * p_100217_, p_100219_ + p_100217_ + p_100218_, p_100220_ + p_100218_, p_100218_, p_100218_);
-                }
-            }
-
-            this.blit(p_100214_, this.x + p_100218_ + i * p_100217_, this.y + p_100218_ * 2 + p_100216_ * p_100217_, p_100219_ + p_100218_, p_100220_ + p_100217_ + p_100218_, p_100217_, p_100218_);
-            this.blit(p_100214_, this.x + p_100218_ + (i + 1) * p_100217_, this.y + p_100218_ * 2 + p_100216_ * p_100217_, p_100219_ + p_100218_, p_100220_ + p_100217_ + p_100218_, p_100218_, p_100218_);
-        }
-    }
-    
     public void setVisible(boolean visible) {
         this.isVisible = visible;
     }
@@ -196,13 +163,23 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
         return this.isVisible;
     }
 
+    @Override
+    public void setFocused(boolean p_265728_) {
+        // Do nothing
+    }
+
+    @Override
+    public boolean isFocused() {
+        return false;
+    }
+
     protected class OverlayArcaneRecipeButton extends AbstractWidget implements PlaceRecipe<Ingredient> {
-        protected final Recipe<?> recipe;
+        protected final RecipeHolder<?> recipe;
         protected final boolean isCraftable;
         protected final List<OverlayArcaneRecipeComponent.OverlayArcaneRecipeButton.Pos> ingredientPos = new ArrayList<>();
         
-        public OverlayArcaneRecipeButton(int xPos, int yPos, Recipe<?> recipe, boolean isCraftable) {
-            super(xPos, yPos, 200, 20, TextComponent.EMPTY);
+        public OverlayArcaneRecipeButton(int xPos, int yPos, RecipeHolder<?> recipe, boolean isCraftable) {
+            super(xPos, yPos, 200, 20, Component.empty());
             this.width = 24;
             this.height = 24;
             this.recipe = recipe;
@@ -210,12 +187,12 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
             this.calculateIngredientsPositions(recipe);
         }
         
-        protected void calculateIngredientsPositions(Recipe<?> recipe) {
-            this.placeRecipe(3, 3, -1, recipe, recipe.getIngredients().iterator(), 0);
+        protected void calculateIngredientsPositions(RecipeHolder<?> recipe) {
+            this.placeRecipe(3, 3, -1, recipe, recipe.value().getIngredients().iterator(), 0);
         }
         
         @Override
-        public void updateNarration(NarrationElementOutput output) {
+        public void updateWidgetNarration(NarrationElementOutput output) {
             this.defaultButtonNarrationText(output);
         }
 
@@ -228,23 +205,13 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
         }
 
         @Override
-        public void renderButton(PoseStack poseStack, int p_93677_, int p_93678_, float p_93679_) {
-            RenderSystem.setShaderTexture(0, OverlayArcaneRecipeComponent.RECIPE_BOOK_LOCATION);
-            
-            int texX = 152;
-            if (!this.isCraftable) {
-                texX += 26;
-            }
-            
-            int texY = OverlayArcaneRecipeComponent.this.useFurnaceStyle ? 130 : 78;
-            if (this.isHoveredOrFocused()) {
-                texY += 26;
-            }
-            
-            this.blit(poseStack, this.x, this.y, texX, texY, this.width, this.height);
+        public void renderWidget(GuiGraphics guiGraphics, int p_93677_, int p_93678_, float p_93679_) {
+            WidgetSprites sprites = OverlayArcaneRecipeComponent.this.useFurnaceStyle ? OverlayArcaneRecipeComponent.FURNACE_OVERLAY_SPRITES : OverlayArcaneRecipeComponent.CRAFTING_OVERLAY_SPRITES;
+            ResourceLocation spriteLoc = sprites.get(this.isCraftable, this.isHoveredOrFocused());
+            guiGraphics.blitSprite(spriteLoc, this.getX(), this.getY(), this.width, this.height);
             PoseStack modelViewStack = RenderSystem.getModelViewStack();
             modelViewStack.pushPose();
-            modelViewStack.translate((double)(this.x + 2), (double)(this.y + 2), 125.0D);
+            modelViewStack.translate((double)(this.getX() + 2), (double)(this.getY() + 2), 125.0D);
 
             for (OverlayArcaneRecipeComponent.OverlayArcaneRecipeButton.Pos pos : this.ingredientPos) {
                 modelViewStack.pushPose();
@@ -252,7 +219,7 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
                 modelViewStack.scale(0.375F, 0.375F, 1.0F);
                 modelViewStack.translate(-8.0D, -8.0D, 0.0D);
                 RenderSystem.applyModelViewMatrix();
-                OverlayArcaneRecipeComponent.this.mc.getItemRenderer().renderAndDecorateItem(pos.ingredients[Mth.floor(OverlayArcaneRecipeComponent.this.time / 30.0F) % pos.ingredients.length], 0, 0);
+                guiGraphics.renderItem(pos.ingredients[Mth.floor(OverlayArcaneRecipeComponent.this.time / 30.0F) % pos.ingredients.length], 0, 0);
                 modelViewStack.popPose();
             }
             
@@ -274,7 +241,7 @@ public class OverlayArcaneRecipeComponent extends GuiComponent implements Widget
     }
     
     protected class OverlayArcaneSingleIngredientRecipeButton extends OverlayArcaneRecipeComponent.OverlayArcaneRecipeButton {
-        public OverlayArcaneSingleIngredientRecipeButton(int xPos, int yPos, Recipe<?> recipe, boolean isCraftable) {
+        public OverlayArcaneSingleIngredientRecipeButton(int xPos, int yPos, RecipeHolder<?> recipe, boolean isCraftable) {
             super(xPos, yPos, recipe, isCraftable);
         }
 

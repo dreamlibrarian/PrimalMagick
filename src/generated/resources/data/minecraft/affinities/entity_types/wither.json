@@ -1,0 +1,9 @@
+{
+  "type": "entity_type",
+  "target": "minecraft:wither",
+  "values": {
+    "infernal": 50,
+    "sky": 20,
+    "void": 50
+  }
+}

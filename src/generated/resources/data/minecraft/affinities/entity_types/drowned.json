@@ -1,0 +1,9 @@
+{
+  "type": "entity_type",
+  "target": "minecraft:drowned",
+  "values": {
+    "blood": 10,
+    "moon": 10,
+    "sea": 5
+  }
+}

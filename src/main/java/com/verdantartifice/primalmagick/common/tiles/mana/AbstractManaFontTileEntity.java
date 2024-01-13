@@ -1,12 +1,13 @@
 package com.verdantartifice.primalmagick.common.tiles.mana;
 
 import com.verdantartifice.primalmagick.common.blocks.mana.AbstractManaFontBlock;
+import com.verdantartifice.primalmagick.common.capabilities.IManaStorage;
 import com.verdantartifice.primalmagick.common.network.PacketHandler;
 import com.verdantartifice.primalmagick.common.network.packets.fx.ManaSparklePacket;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.stats.StatsManager;
 import com.verdantartifice.primalmagick.common.stats.StatsPM;
-import com.verdantartifice.primalmagick.common.tiles.base.TilePM;
+import com.verdantartifice.primalmagick.common.tiles.base.AbstractTilePM;
 import com.verdantartifice.primalmagick.common.wands.IInteractWithWand;
 import com.verdantartifice.primalmagick.common.wands.IWand;
 
@@ -27,14 +28,15 @@ import net.minecraft.world.phys.Vec3;
  * 
  * @author Daedalus4096
  */
-public abstract class AbstractManaFontTileEntity extends TilePM implements IInteractWithWand {
+public abstract class AbstractManaFontTileEntity extends AbstractTilePM implements IInteractWithWand {
     protected static final int RECHARGE_TICKS = 20;
     
     protected int ticksExisted = 0;
-    protected int mana = 0;
+    protected int mana;
     
     public AbstractManaFontTileEntity(BlockEntityType<? extends AbstractManaFontTileEntity> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
+        this.mana = this.getInitialMana();
     }
 
     @Override
@@ -54,8 +56,10 @@ public abstract class AbstractManaFontTileEntity extends TilePM implements IInte
     }
     
     public int getManaCapacity() {
-        return this.getBlockState().getBlock() instanceof AbstractManaFontBlock ? ((AbstractManaFontBlock)this.getBlockState().getBlock()).getManaCapacity() : 0;
+        return this.getBlockState().getBlock() instanceof AbstractManaFontBlock fontBlock ? fontBlock.getManaCapacity() : 0;
     }
+    
+    protected abstract int getInitialMana();
 
     @Override
     public InteractionResult onWandRightClick(ItemStack wandStack, Level world, Player player, BlockPos pos, Direction direction) {
@@ -70,10 +74,15 @@ public abstract class AbstractManaFontTileEntity extends TilePM implements IInte
 
     @Override
     public void onWandUseTick(ItemStack wandStack, Level level, Player player, Vec3 targetPos, int count) {
-        if (count % 5 == 0 && wandStack.getItem() instanceof IWand) {
-            IWand wand = (IWand)wandStack.getItem();
-            if (this.getBlockState().getBlock() instanceof AbstractManaFontBlock) {
-                Source source = ((AbstractManaFontBlock)this.getBlockState().getBlock()).getSource();
+        if (count % 5 == 0) {
+            this.doSiphon(wandStack, level, player, targetPos);
+        }
+    }
+    
+    public void doSiphon(ItemStack wandStack, Level level, Player player, Vec3 targetPos) {
+        if (wandStack.getItem() instanceof IWand wand) {
+            if (this.getBlockState().getBlock() instanceof AbstractManaFontBlock fontBlock) {
+                Source source = fontBlock.getSource();
                 if (source != null) {
                     // Transfer mana from the font to the wand
                     int tap = Math.min(this.mana, wand.getSiphonAmount(wandStack));
@@ -92,6 +101,32 @@ public abstract class AbstractManaFontTileEntity extends TilePM implements IInte
                                     this.worldPosition, 
                                     32.0D);
                         }
+                    }
+                }
+            }
+        }
+    }
+    
+    public void doSiphon(IManaStorage container, Level level, Player player, Vec3 targetPos, int maxTransferCentimana) {
+        if (this.getBlockState().getBlock() instanceof AbstractManaFontBlock fontBlock) {
+            Source source = fontBlock.getSource();
+            if (source != null) {
+                // Transfer mana from the font to the container
+                int tap = Math.min(this.mana, maxTransferCentimana / 100);
+                int realManaTransfered = container.receiveMana(source, tap * 100, false) / 100;
+                if (realManaTransfered > 0) {
+                    this.mana -= realManaTransfered;
+                    StatsManager.incrementValue(player, StatsPM.MANA_SIPHONED, realManaTransfered);
+                    this.setChanged();
+                    this.syncTile(true);
+                    
+                    // Show fancy sparkles
+                    if (!level.isClientSide) {
+                        PacketHandler.sendToAllAround(
+                                new ManaSparklePacket(this.worldPosition, targetPos.x, targetPos.y, targetPos.z, 20, source.getColor()), 
+                                this.level.dimension(), 
+                                this.worldPosition, 
+                                32.0D);
                     }
                 }
             }

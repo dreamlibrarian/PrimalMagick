@@ -1,8 +1,0 @@
-{
-  "type": "minecraft:stonecutting",
-  "ingredient": {
-    "item": "primalmagick:marble_raw"
-  },
-  "result": "primalmagick:marble_slab",
-  "count": 2
-}

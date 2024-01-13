@@ -1,7 +1,6 @@
 package com.verdantartifice.primalmagick.common.blocks.rituals;
 
 import java.awt.Color;
-import java.util.Random;
 
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
 import com.verdantartifice.primalmagick.client.fx.particles.NoteEmitterParticleData;
@@ -13,6 +12,7 @@ import com.verdantartifice.primalmagick.common.tiles.rituals.CelestialHarpTileEn
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -33,8 +33,8 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -52,7 +52,7 @@ public class CelestialHarpBlock extends BaseEntityBlock implements IRitualPropBl
     protected static final VoxelShape SHAPE = Shapes.or(Block.box(0.0D, 0.0D, 0.0D, 16.0D, 2.0D, 16.0D), Block.box(7.0D, 0.0D, 0.0D, 9.0D, 16.0D, 16.0D));
     
     public CelestialHarpBlock() {
-        super(Block.Properties.of(Material.WOOD, MaterialColor.GOLD).strength(2.5F).sound(SoundType.WOOD));
+        super(Block.Properties.of().mapColor(MapColor.GOLD).ignitedByLava().instrument(NoteBlockInstrument.BASS).strength(1.5F, 6.0F).sound(SoundType.WOOD));
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH));
     }
 
@@ -100,13 +100,12 @@ public class CelestialHarpBlock extends BaseEntityBlock implements IRitualPropBl
 
     @Override
     public boolean isPropActivated(BlockState state, Level world, BlockPos pos) {
-        BlockEntity tile = world.getBlockEntity(pos);
-        return (tile instanceof CelestialHarpTileEntity && ((CelestialHarpTileEntity)tile).isPlaying());
+        return world.getBlockEntity(pos) instanceof CelestialHarpTileEntity harp && harp.isPlaying();
     }
 
     @Override
     public String getPropTranslationKey() {
-        return "primalmagick.ritual.prop.celestial_harp";
+        return "ritual.primalmagick.prop.celestial_harp";
     }
 
     public float getUsageStabilityBonus() {
@@ -146,7 +145,7 @@ public class CelestialHarpBlock extends BaseEntityBlock implements IRitualPropBl
     }
     
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show spell sparkles if receiving salt power
         if (this.isBlockSaltPowered(worldIn, pos)) {
             FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Color.WHITE.getRGB());

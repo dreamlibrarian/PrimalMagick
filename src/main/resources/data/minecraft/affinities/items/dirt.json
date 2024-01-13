@@ -1,7 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:dirt",
-  "set": {
-    "earth": 5
-  }
-}

@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:pointed_dripstone",
-  "set": {
-    "earth": 2,
-    "sea": 2
-  }
-}

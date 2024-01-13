@@ -1,0 +1,20 @@
+{
+  "addenda": [],
+  "discipline": "BASICS",
+  "key": "ATTUNEMENTS",
+  "name": "research.primalmagick.attunements.title",
+  "parents": [
+    "FIRST_STEPS"
+  ],
+  "stages": [
+    {
+      "required_knowledge": [
+        "OBSERVATION;1"
+      ],
+      "text": "research.primalmagick.attunements.text.stage.1"
+    },
+    {
+      "text": "research.primalmagick.attunements.text.stage.2"
+    }
+  ]
+}

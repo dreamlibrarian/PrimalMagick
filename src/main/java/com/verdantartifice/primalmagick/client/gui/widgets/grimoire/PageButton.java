@@ -1,16 +1,15 @@
 package com.verdantartifice.primalmagick.client.gui.widgets.grimoire;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
 import com.verdantartifice.primalmagick.common.sounds.SoundsPM;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
@@ -20,13 +19,13 @@ import net.minecraft.util.Mth;
  * @author Daedalus4096
  */
 public class PageButton extends Button {
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/grimoire.png");
+    private static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/grimoire.png");
 
     protected GrimoireScreen screen;
     protected boolean isNext;
 
-    public PageButton(int widthIn, int heightIn, GrimoireScreen screen, boolean isNext) {
-        super(widthIn, heightIn, 12, 5, TextComponent.EMPTY, new Handler());
+    public PageButton(int x, int y, GrimoireScreen screen, boolean isNext) {
+        super(Button.builder(Component.empty(), new Handler()).bounds(x, y, 12, 5));
         this.screen = screen;
         this.isNext = isNext;
     }
@@ -40,20 +39,19 @@ public class PageButton extends Button {
     }
     
     @Override
-    public void renderButton(PoseStack matrixStack, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
+    public void renderWidget(GuiGraphics guiGraphics, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
         Minecraft mc = Minecraft.getInstance();
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        matrixStack.pushPose();
+        guiGraphics.pose().pushPose();
 
         // When hovered, scale the button up and down to create a pulsing effect
         float scaleMod = this.isHoveredOrFocused() ? Mth.sin(mc.player.tickCount / 3.0F) * 0.2F + 0.1F : 0.0F;
         int dx = this.width / 2;
         int dy = this.height / 2;
-        matrixStack.translate(this.x + dx, this.y + dy, 0.0F);
-        matrixStack.scale(1.5F + scaleMod, 1.5F + scaleMod, 1.0F);
-        this.blit(matrixStack, -dx, -dy, this.isNext ? 12 : 0, 185, this.width, this.height);
+        guiGraphics.pose().translate(this.getX() + dx, this.getY() + dy, 0.0F);
+        guiGraphics.pose().scale(1.5F + scaleMod, 1.5F + scaleMod, 1.0F);
+        guiGraphics.blit(TEXTURE, -dx, -dy, this.isNext ? 12 : 0, 185, this.width, this.height);
 
-        matrixStack.popPose();
+        guiGraphics.pose().popPose();
 }
     
     @Override

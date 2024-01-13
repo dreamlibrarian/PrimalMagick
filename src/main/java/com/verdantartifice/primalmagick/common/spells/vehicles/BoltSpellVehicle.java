@@ -5,13 +5,12 @@ import java.util.Map;
 import com.verdantartifice.primalmagick.common.network.PacketHandler;
 import com.verdantartifice.primalmagick.common.network.packets.fx.SpellBoltPacket;
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 import com.verdantartifice.primalmagick.common.spells.SpellProperty;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -24,7 +23,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class BoltSpellVehicle extends AbstractRaycastSpellVehicle {
     public static final String TYPE = "bolt";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_VEHICLE_BOLT"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_VEHICLE_BOLT.get().compoundKey();
     
     public static CompoundResearchKey getResearch() {
         return RESEARCH;
@@ -43,7 +42,7 @@ public class BoltSpellVehicle extends AbstractRaycastSpellVehicle {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("range", new SpellProperty("range", "primalmagick.spell.property.range", 1, 5));
+        propMap.put("range", new SpellProperty("range", "spells.primalmagick.property.range", 1, 5));
         return propMap;
     }
     
@@ -59,7 +58,7 @@ public class BoltSpellVehicle extends AbstractRaycastSpellVehicle {
             PacketHandler.sendToAllAround(
                     new SpellBoltPacket(source, target, spell.getPayload().getSource().getColor()), 
                     world.dimension(), 
-                    new BlockPos(source), 
+                    BlockPos.containing(source), 
                     64.0D);
         }
     }
@@ -70,7 +69,7 @@ public class BoltSpellVehicle extends AbstractRaycastSpellVehicle {
 
     @Override
     public Component getDetailTooltip() {
-        return new TranslatableComponent("primalmagick.spell.vehicle.detail_tooltip." + this.getVehicleType(), this.getRangeBlocks());
+        return Component.translatable("spells.primalmagick.vehicle." + this.getVehicleType() + ".detail_tooltip", this.getRangeBlocks());
     }
 
     @Override

@@ -1,18 +1,14 @@
 package com.verdantartifice.primalmagick.common.spells.payloads;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.sounds.SoundsPM;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
@@ -24,7 +20,7 @@ import net.minecraft.world.level.Level;
  */
 public class BloodDamageSpellPayload extends AbstractDamageSpellPayload {
     public static final String TYPE = "blood_damage";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_PAYLOAD_BLOOD"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_PAYLOAD_BLOOD.get().compoundKey();
     
     public BloodDamageSpellPayload() {
         super();
@@ -54,12 +50,6 @@ public class BloodDamageSpellPayload extends AbstractDamageSpellPayload {
     }
 
     @Override
-    protected DamageSource getDamageSource(LivingEntity source, SpellPackage spell, Entity projectileEntity) {
-        // Bypass the target's armor, if any
-        return super.getDamageSource(source, spell, projectileEntity).bypassArmor();
-    }
-
-    @Override
     protected String getPayloadType() {
         return TYPE;
     }
@@ -72,6 +62,6 @@ public class BloodDamageSpellPayload extends AbstractDamageSpellPayload {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.payload.detail_tooltip." + this.getPayloadType(), DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)));
+        return Component.translatable("spells.primalmagick.payload." + this.getPayloadType() + ".detail_tooltip", DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)));
     }
 }

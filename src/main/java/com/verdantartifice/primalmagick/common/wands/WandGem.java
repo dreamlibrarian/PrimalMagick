@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
 
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Rarity;
 
@@ -32,13 +31,13 @@ public class WandGem implements IWandComponent {
     protected final String tag;                 // Unique identifier for the wand gem
     protected final int capacity;               // The amount of mana the wand can hold
     protected final Rarity rarity;              // The gem's rarity, used to color its name and determine completed wand rarity
-    protected final ModelResourceLocation mrl;  // Resource location of the gem's model, stored in a blockstate file
+    protected final ResourceLocation mrlNamespace;  // Resource location of the gem's model, stored in a blockstate file
     
     public WandGem(@Nonnull String tag, @Nonnull Rarity rarity, int capacity) {
-        this(tag, rarity, capacity, new ModelResourceLocation(new ResourceLocation(PrimalMagick.MODID, tag + "_wand_gem"), ""));
+        this(tag, rarity, capacity, PrimalMagick.resource(tag + "_wand_gem"));
     }
     
-    public WandGem(@Nonnull String tag, @Nonnull Rarity rarity, int capacity, @Nonnull ModelResourceLocation mrl) {
+    public WandGem(@Nonnull String tag, @Nonnull Rarity rarity, int capacity, @Nonnull ResourceLocation mrln) {
         if (REGISTRY.containsKey(tag)) {
             // Don't allow a given gem to be registered more than once
             throw new IllegalArgumentException("Wand gem " + tag + " already registered!");
@@ -46,13 +45,18 @@ public class WandGem implements IWandComponent {
         this.tag = tag;
         this.capacity = capacity;
         this.rarity = rarity;
-        this.mrl = mrl;
+        this.mrlNamespace = mrln;
         REGISTRY.put(tag, this);
     }
     
     @Override
     public String getTag() {
         return this.tag;
+    }
+    
+    @Override
+    public Type getComponentType() {
+        return IWandComponent.Type.GEM;
     }
     
     public int getCapacity() {
@@ -65,13 +69,8 @@ public class WandGem implements IWandComponent {
     }
     
     @Nonnull
-    public ModelResourceLocation getModelResourceLocation() {
-        return this.mrl;
-    }
-    
-    @Override
-    public String getNameTranslationKey() {
-        return "primalmagick.wand_gem." + this.tag + ".name";
+    public ResourceLocation getModelResourceLocationNamespace() {
+        return this.mrlNamespace;
     }
     
     @Nonnull

@@ -7,20 +7,23 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.verdantartifice.primalmagick.common.items.ItemsPM;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.Registry;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.SerializationTags;
-import net.minecraft.tags.Tag;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.Container;
 import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.items.IItemHandler;
@@ -57,7 +60,7 @@ public class InventoryUtils {
             // Determine if the stack items, and optionally NBT, match
             boolean areEqual = matchNBT ?
                     ItemStack.matches(stack, searchStack) :
-                    ItemStack.isSame(stack, searchStack);
+                    ItemStack.isSameItem(stack, searchStack);
             if (areEqual) {
                 count -= searchStack.getCount();
                 if (count <= 0) {
@@ -85,6 +88,18 @@ public class InventoryUtils {
     }
     
     /**
+     * Determine if the given player is carrying a stack of the given item in their main inventory.  Does
+     * not consider equipped items or nested inventories (e.g. backpacks).
+     * 
+     * @param player the player whose inventory to search
+     * @param item the item being searched for
+     * @return true if the player is carrying at least one of the given item, false otherwise
+     */
+    public static boolean isPlayerCarrying(@Nullable Player player, @Nonnull Item item) {
+        return isPlayerCarrying(player, new ItemStack(item));
+    }
+    
+    /**
      * Determine if the given player is carrying items of the given tag in their main inventory.  Does
      * not consider equipped items or nested inventories (e.g. backpacks).  If the given amount is
      * greater than one, this method will search for any combination of itemstacks in the player's
@@ -104,10 +119,10 @@ public class InventoryUtils {
         if (tagName == null) {
             return true;
         }
-        Tag<Item> tag = SerializationTags.getInstance().getOrEmpty(Registry.ITEM_REGISTRY).getTagOrEmpty(tagName);
+        TagKey<Item> tag = ItemTags.create(tagName);
         for (ItemStack searchStack : player.getInventory().items) {
             // Only the items need match, not the NBT data
-            if (!searchStack.isEmpty() && tag.contains(searchStack.getItem())) {
+            if (!searchStack.isEmpty() && searchStack.is(tag)) {
                 amount -= searchStack.getCount();
                 if (amount <= 0) {
                     // Once a sufficient number of the given item are found, return true
@@ -122,7 +137,9 @@ public class InventoryUtils {
      * Attempts to remove the given quantity of the given item from the player's main inventory.  Does
      * not consider equipped items or nested inventories (e.g. backpacks).  If the given stack has a
      * count higher than one, this method will search for any combination of itemstacks in the player's
-     * inventory that total the given count, rather than requiring a single stack of that size.
+     * inventory that total the given count, rather than requiring a single stack of that size.  Should
+     * the item being removed have a container (e.g. an empty bucket from a milk bucket), the container
+     * will be refunded to the player.
      * 
      * @param player the player whose inventory to search
      * @param stack the item and quantity to be removed
@@ -146,7 +163,7 @@ public class InventoryUtils {
             // Determine if the stack items, and optionally NBT, match
             boolean areEqual = matchNBT ?
                     ItemStack.matches(stack, searchStack) :
-                    ItemStack.isSame(stack, searchStack);
+                    ItemStack.isSameItem(stack, searchStack);
             if (areEqual) {
                 if (searchStack.getCount() > count) {
                     searchStack.shrink(count);
@@ -162,7 +179,8 @@ public class InventoryUtils {
                     }
                 }
                 if (count <= 0) {
-                    // Once a sufficient number of the given item are removed, return true
+                    // Once a sufficient number of the given item are removed, refund container(s) and return true
+                    addRefundItem(stack, stack.getCount(), player);
                     return true;
                 }
             }
@@ -175,7 +193,8 @@ public class InventoryUtils {
      * not consider equipped items or nested inventories (e.g. backpacks).  If the given stack has a
      * count higher than one, this method will search for any combination of itemstacks in the player's
      * inventory that total the given count, rather than requiring a single stack of that size.  By
-     * default, does not attempt to match NBT data on itemstacks.
+     * default, does not attempt to match NBT data on itemstacks.  Should the item being removed have a
+     * container (e.g. an empty bucket from a milk bucket), the container will be refunded to the player.
      * 
      * @param player the player whose inventory to search
      * @param stack the item and quantity to be removed
@@ -191,7 +210,8 @@ public class InventoryUtils {
      * greater than one, this method will search for any combination of itemstacks in the player's
      * inventory that total the given count, rather than requiring a single stack of that size.  The found
      * items need not be the same, so long as all of them belong to the tag.  Does not attempt to match
-     * NBT data, as that cannot be conveyed by a tag.
+     * NBT data, as that cannot be conveyed by a tag.  Should the items being removed have a container
+     * (e.g. an empty bucket from a milk bucket), the container will be refunded to the player.
      * 
      * @param player the player whose inventory to search
      * @param tagName the tag containing the items to be removed
@@ -209,18 +229,20 @@ public class InventoryUtils {
             // If the player is not carrying enough of the given items, return false immediately
             return false;
         }
-        Tag<Item> tag = SerializationTags.getInstance().getOrEmpty(Registry.ITEM_REGISTRY).getTagOrEmpty(tagName);
+        TagKey<Item> tag = ItemTags.create(tagName);
         for (int index = 0; index < player.getInventory().items.size(); index++) {
             ItemStack searchStack = player.getInventory().items.get(index);
             // Only the items need match, not the NBT data
-            if (!searchStack.isEmpty() && tag.contains(searchStack.getItem())) {
+            if (!searchStack.isEmpty() && searchStack.is(tag)) {
                 if (searchStack.getCount() > amount) {
+                    addRefundItem(searchStack, amount, player);
                     searchStack.shrink(amount);
                     amount = 0;
                     if (player instanceof ServerPlayer) {
                         ((ServerPlayer)player).connection.send(new ClientboundContainerSetSlotPacket(ClientboundContainerSetSlotPacket.PLAYER_INVENTORY, 0, index, searchStack));
                     }
                 } else {
+                    addRefundItem(searchStack, searchStack.getCount(), player);
                     amount -= searchStack.getCount();
                     player.getInventory().items.set(index, ItemStack.EMPTY);
                     if (player instanceof ServerPlayer) {
@@ -234,6 +256,27 @@ public class InventoryUtils {
             }
         }
         return false;
+    }
+    
+    private static void addRefundItem(ItemStack stack, int refundCount, Player player) {
+        ItemStack refundStack = ItemStack.EMPTY;
+        if (stack.hasCraftingRemainingItem()) {
+            refundStack = stack.getCraftingRemainingItem().copyWithCount(refundCount);
+        } else if (stack.is(Items.POTION)) {
+            // Potions don't use the standard container mechanism, so test for them directly
+            refundStack = new ItemStack(Items.GLASS_BOTTLE, refundCount);
+        } else if (stack.is(ItemsPM.CONCOCTION.get())) {
+            // Concoctions don't use the standard container mechanism, so test for them directly
+            refundStack = new ItemStack(ItemsPM.SKYGLASS_FLASK.get(), refundCount);
+        }
+        
+        if (!refundStack.isEmpty() && !player.addItem(refundStack)) {
+            ItemEntity entity = player.drop(refundStack, false);
+            if (entity != null) {
+                entity.setNoPickUpDelay();
+                entity.setTarget(player.getUUID());
+            }
+        }
     }
     
     /**
@@ -283,7 +326,7 @@ public class InventoryUtils {
                 // Determine if the stack items, and optionally NBT, match
                 boolean areEqual = matchNBT ?
                         ItemStack.matches(toFind, searchStack) :
-                        ItemStack.isSame(toFind, searchStack);
+                        ItemStack.isSameItem(toFind, searchStack);
                 if (areEqual) {
                     retVal.add(searchStack);
                 }
@@ -320,10 +363,10 @@ public class InventoryUtils {
     public static NonNullList<ItemStack> find(@Nullable Player player, @Nullable ResourceLocation tagName) {
         NonNullList<ItemStack> retVal = NonNullList.create();
         if (player != null && tagName != null) {
-            Tag<Item> tag = SerializationTags.getInstance().getOrEmpty(Registry.ITEM_REGISTRY).getTagOrEmpty(tagName);
+            TagKey<Item> tag = ItemTags.create(tagName);
             for (ItemStack searchStack : player.getInventory().items) {
                 // Only the items need match, not the NBT data
-                if (!searchStack.isEmpty() && tag.contains(searchStack.getItem())) {
+                if (!searchStack.isEmpty() && searchStack.is(tag)) {
                     retVal.add(searchStack);
                 }
             }

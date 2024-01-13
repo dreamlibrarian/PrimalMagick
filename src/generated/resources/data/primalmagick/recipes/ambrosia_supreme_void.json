@@ -1,0 +1,54 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "primalmagick:manafruit"
+    },
+    {
+      "item": "primalmagick:mana_prism"
+    },
+    {
+      "item": "primalmagick:essence_cluster_void"
+    },
+    {
+      "item": "primalmagick:rune_absorb"
+    },
+    {
+      "item": "primalmagick:rune_self"
+    },
+    {
+      "item": "primalmagick:rune_power"
+    }
+  ],
+  "instability": 8,
+  "mana": {
+    "sources": {
+      "void": 200
+    }
+  },
+  "props": [
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "block": "primalmagick:ritual_lectern"
+    },
+    {
+      "block": "primalmagick:bloodletter"
+    },
+    {
+      "block": "primalmagick:celestial_harp"
+    }
+  ],
+  "research": "SUPREME_AMBROSIA&&t_discover_void",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:ambrosia_supreme_void"
+  }
+}

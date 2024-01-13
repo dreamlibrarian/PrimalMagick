@@ -1,0 +1,10 @@
+{
+  "type": "item",
+  "set": {
+    "earth": 5,
+    "hallowed": 5,
+    "infernal": 5,
+    "void": 5
+  },
+  "target": "minecraft:echo_shard"
+}

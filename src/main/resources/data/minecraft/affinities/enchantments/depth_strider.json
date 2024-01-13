@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:depth_strider",
-  "multiplier": {
-    "sea": 1
-  }
-}

@@ -3,7 +3,6 @@ package com.verdantartifice.primalmagick.common.blocks.rituals;
 import java.awt.Color;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Random;
 
 import javax.annotation.Nullable;
 
@@ -18,9 +17,9 @@ import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -48,8 +47,7 @@ import net.minecraft.world.level.block.state.properties.BellAttachType;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
@@ -68,10 +66,10 @@ public class RitualBellBlock extends BaseEntityBlock implements IRitualPropBlock
     public static final EnumProperty<BellAttachType> ATTACHMENT = BlockStateProperties.BELL_ATTACHMENT;
     
     protected static final VoxelShape BELL_CORE_SHAPE = Shapes.or(Block.box(5.0D, 6.0D, 5.0D, 11.0D, 13.0D, 11.0D), Block.box(4.0D, 4.0D, 4.0D, 12.0D, 6.0D, 12.0D));
-    protected static final VoxelShape FLOOR_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/ritual_bell_floor")));
-    protected static final VoxelShape CEILING_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/ritual_bell_ceiling")));
-    protected static final VoxelShape ONE_WALL_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/ritual_bell_wall")));
-    protected static final VoxelShape TWO_WALLS_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/ritual_bell_between_walls")));
+    protected static final VoxelShape FLOOR_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(PrimalMagick.resource("block/ritual_bell_floor")));
+    protected static final VoxelShape CEILING_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(PrimalMagick.resource("block/ritual_bell_ceiling")));
+    protected static final VoxelShape ONE_WALL_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(PrimalMagick.resource("block/ritual_bell_wall")));
+    protected static final VoxelShape TWO_WALLS_SHAPE = Shapes.or(BELL_CORE_SHAPE, VoxelShapeUtils.fromModel(PrimalMagick.resource("block/ritual_bell_between_walls")));
     protected static final Map<BellAttachType, Map<Direction, VoxelShape>> SHAPES = Util.make(Maps.newEnumMap(BellAttachType.class), map -> {
         map.put(BellAttachType.FLOOR, Util.make(Maps.newEnumMap(Direction.class), innerMap -> {
             innerMap.put(Direction.NORTH, FLOOR_SHAPE);
@@ -100,7 +98,7 @@ public class RitualBellBlock extends BaseEntityBlock implements IRitualPropBlock
     });
     
     public RitualBellBlock() {
-        super(Block.Properties.of(Material.METAL, MaterialColor.COLOR_CYAN).strength(5.0F).sound(SoundType.ANVIL));
+        super(Block.Properties.of().mapColor(MapColor.COLOR_CYAN).pushReaction(PushReaction.DESTROY).strength(3.0F, 6.0F).sound(SoundType.ANVIL));
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH).setValue(ATTACHMENT, BellAttachType.FLOOR));
     }
     
@@ -188,11 +186,6 @@ public class RitualBellBlock extends BaseEntityBlock implements IRitualPropBlock
     }
     
     @Override
-    public PushReaction getPistonPushReaction(BlockState state) {
-        return PushReaction.DESTROY;
-    }
-    
-    @Override
     public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
         return false;
     }
@@ -277,7 +270,7 @@ public class RitualBellBlock extends BaseEntityBlock implements IRitualPropBlock
     }
     
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show spell sparkles if receiving salt power
         if (this.isBlockSaltPowered(worldIn, pos)) {
             FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Color.WHITE.getRGB());
@@ -296,13 +289,12 @@ public class RitualBellBlock extends BaseEntityBlock implements IRitualPropBlock
 
     @Override
     public boolean isPropActivated(BlockState state, Level world, BlockPos pos) {
-        BlockEntity tile = world.getBlockEntity(pos);
-        return (tile instanceof RitualBellTileEntity && ((RitualBellTileEntity)tile).isRinging());
+        return world.getBlockEntity(pos) instanceof RitualBellTileEntity bell && bell.isRinging();
     }
 
     @Override
     public String getPropTranslationKey() {
-        return "primalmagick.ritual.prop.ritual_bell";
+        return "ritual.primalmagick.prop.ritual_bell";
     }
 
     public float getUsageStabilityBonus() {

@@ -2,9 +2,9 @@ package com.verdantartifice.primalmagick.common.spells.payloads;
 
 import java.util.Map;
 
-import com.verdantartifice.primalmagick.common.misc.DamageSourcesPM;
+import com.verdantartifice.primalmagick.common.damagesource.DamageSourcesPM;
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.sounds.SoundsPM;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
@@ -12,7 +12,6 @@ import com.verdantartifice.primalmagick.common.spells.SpellProperty;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -34,7 +33,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class HealingSpellPayload extends AbstractSpellPayload {
     public static final String TYPE = "healing";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_PAYLOAD_HEALING"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_PAYLOAD_HEALING.get().compoundKey();
 
     public HealingSpellPayload() {
         super();
@@ -52,20 +51,20 @@ public class HealingSpellPayload extends AbstractSpellPayload {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("power", new SpellProperty("power", "primalmagick.spell.property.power", 1, 5));
+        propMap.put("power", new SpellProperty("power", "spells.primalmagick.property.power", 1, 5));
         return propMap;
     }
     
     protected DamageSource getDamageSource(LivingEntity source, SpellPackage spell, Entity projectileEntity) {
         if (projectileEntity != null) {
             // If the spell was a projectile or a mine, then it's indirect now matter how it was deployed
-            return DamageSourcesPM.causeIndirectSorceryDamage(projectileEntity, source);
+            return DamageSourcesPM.sorcery(source.level(), this.getSource(), projectileEntity, source);
         } else if (spell.getVehicle().isIndirect()) {
             // If the spell vehicle is indirect but no projectile was given, then it's still indirect
-            return DamageSourcesPM.causeIndirectSorceryDamage(null, source);
+            return DamageSourcesPM.sorcery(source.level(), this.getSource(), null, source);
         } else {
             // Otherwise, do direct damage
-            return DamageSourcesPM.causeDirectSorceryDamage(source);
+            return DamageSourcesPM.sorcery(source.level(), this.getSource(), source);
         }
     }
 
@@ -73,8 +72,7 @@ public class HealingSpellPayload extends AbstractSpellPayload {
     public void execute(HitResult target, Vec3 burstPoint, SpellPackage spell, Level world, LivingEntity caster, ItemStack spellSource, Entity projectileEntity) {
         if (target != null && target.getType() == HitResult.Type.ENTITY) {
             EntityHitResult entityTarget = (EntityHitResult)target;
-            if (entityTarget.getEntity() instanceof LivingEntity) {
-                LivingEntity entity = (LivingEntity)entityTarget.getEntity();
+            if (entityTarget.getEntity() instanceof LivingEntity entity) {
                 if (entity.isInvertedHealAndHarm()) {
                     // Undead entities get dealt damage
                     entity.hurt(this.getDamageSource(caster, spell, projectileEntity), 1.5F * this.getBaseAmount(spell, spellSource));
@@ -85,7 +83,7 @@ public class HealingSpellPayload extends AbstractSpellPayload {
                     float healAmount = (float)this.getBaseAmount(spell, spellSource);
                     float overhealing = (curHealth + healAmount) - maxHealth;
                     entity.heal(healAmount);
-                    if (overhealing > 0F) {
+                    if (overhealing > 0 && overhealing >= entity.getAbsorptionAmount()) {
                         // Grant a level of absorption for each four points of overhealing done
                         int level = (int)Math.floor(overhealing / 4.0F);
                         if (level > 0) {
@@ -124,6 +122,6 @@ public class HealingSpellPayload extends AbstractSpellPayload {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.payload.detail_tooltip." + this.getPayloadType(), DECIMAL_FORMATTER.format(this.getBaseAmount(spell, spellSource)));
+        return Component.translatable("spells.primalmagick.payload." + this.getPayloadType() + ".detail_tooltip", DECIMAL_FORMATTER.format(this.getBaseAmount(spell, spellSource)));
     }
 }

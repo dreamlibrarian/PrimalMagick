@@ -30,7 +30,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * @author Daedalus4096
  */
 public class FlyingCarpetItem extends Item {
-    public static final ResourceLocation COLOR_PROPERTY = new ResourceLocation(PrimalMagick.MODID, "color");
+    public static final ResourceLocation COLOR_PROPERTY = PrimalMagick.resource("color");
     
     public static final CauldronInteraction DYED_CARPET = (BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, ItemStack stack) -> {
         Item item = stack.getItem();
@@ -55,9 +55,9 @@ public class FlyingCarpetItem extends Item {
     }
     
     public static ItemStack dyeCarpet(ItemStack carpetStack, DyeItem dye) {
-        if (carpetStack.getItem() instanceof FlyingCarpetItem) {
+        if (carpetStack.getItem() instanceof FlyingCarpetItem carpet) {
             ItemStack retVal = carpetStack.copy();
-            ((FlyingCarpetItem)retVal.getItem()).setDyeColor(retVal, dye.getDyeColor());
+            carpet.setDyeColor(retVal, dye.getDyeColor());
             return retVal;
         } else {
             return ItemStack.EMPTY;
@@ -82,7 +82,7 @@ public class FlyingCarpetItem extends Item {
             entityCarpet.setYRot(context.getPlayer().getYRot());
             world.addFreshEntity(entityCarpet);
             world.playSound(null, posX, posY, posZ, SoundEvents.WOOL_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
-            stack.shrink(1);
+            context.getPlayer().setItemInHand(context.getHand(), ItemStack.EMPTY);
             return InteractionResult.SUCCESS;
         } else {
             return InteractionResult.PASS;

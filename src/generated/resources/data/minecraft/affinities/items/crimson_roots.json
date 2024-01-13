@@ -1,0 +1,9 @@
+{
+  "type": "item",
+  "set": {
+    "earth": 2,
+    "infernal": 2,
+    "moon": 2
+  },
+  "target": "minecraft:crimson_roots"
+}

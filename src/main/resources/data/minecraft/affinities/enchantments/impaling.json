@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:impaling",
-  "multiplier": {
-    "blood": 1
-  }
-}

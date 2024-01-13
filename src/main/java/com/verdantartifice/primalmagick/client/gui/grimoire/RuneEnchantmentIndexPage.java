@@ -6,12 +6,12 @@ import java.util.List;
 
 import javax.annotation.Nonnull;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
 import com.verdantartifice.primalmagick.client.gui.widgets.grimoire.RuneEnchantmentButton;
+import com.verdantartifice.primalmagick.common.research.topics.OtherResearchTopic;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.item.enchantment.Enchantment;
 
 /**
@@ -20,7 +20,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
  * @author Daedalus4096
  */
 public class RuneEnchantmentIndexPage extends AbstractPage {
-    public static final String TOPIC = "rune_enchantments";
+    public static final OtherResearchTopic TOPIC = new OtherResearchTopic("rune_enchantments", 0);
 
     protected List<Enchantment> contents = new ArrayList<>();
     protected boolean firstPage;
@@ -34,10 +34,10 @@ public class RuneEnchantmentIndexPage extends AbstractPage {
     }
     
     @Override
-    public void render(PoseStack matrixStack, int side, int x, int y, int mouseX, int mouseY) {
+    public void render(GuiGraphics guiGraphics, int side, int x, int y, int mouseX, int mouseY) {
         // Just render the title; buttons have already been added
         if (this.isFirstPage() && side == 0) {
-            this.renderTitle(matrixStack, side, x, y, mouseX, mouseY, null);
+            this.renderTitle(guiGraphics, side, x, y, mouseX, mouseY, null);
         }
     }
     
@@ -55,15 +55,15 @@ public class RuneEnchantmentIndexPage extends AbstractPage {
     }
     
     @Override
-    protected String getTitleTranslationKey() {
-        return "primalmagick.grimoire.rune_enchantment_header";
+    protected Component getTitleText() {
+        return Component.translatable("grimoire.primalmagick.rune_enchantment_header");
     }
 
     @Override
     public void initWidgets(GrimoireScreen screen, int side, int x, int y) {
         // Add a button to the screen for each enchantment in the page's contents
         for (Enchantment enchant : this.getEnchantments()) {
-            Component text = new TranslatableComponent(enchant.getDescriptionId());
+            Component text = Component.translatable(enchant.getDescriptionId());
             screen.addWidgetToScreen(new RuneEnchantmentButton(x + 12 + (side * 140), y, text, screen, enchant));
             y += 12;
         }

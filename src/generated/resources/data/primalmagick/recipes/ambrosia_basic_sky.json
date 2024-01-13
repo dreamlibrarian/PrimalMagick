@@ -1,0 +1,42 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "primalmagick:manafruit"
+    },
+    {
+      "item": "primalmagick:mana_prism"
+    },
+    {
+      "item": "primalmagick:essence_shard_sky"
+    },
+    {
+      "item": "primalmagick:rune_absorb"
+    },
+    {
+      "item": "primalmagick:rune_self"
+    }
+  ],
+  "instability": 4,
+  "mana": {
+    "sources": {
+      "sky": 40
+    }
+  },
+  "props": [
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "block": "primalmagick:ritual_lectern"
+    }
+  ],
+  "research": "AMBROSIA",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:ambrosia_basic_sky"
+  }
+}

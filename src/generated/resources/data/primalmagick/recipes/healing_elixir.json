@@ -1,0 +1,40 @@
+{
+  "type": "primalmagick:concocting",
+  "group": "healing",
+  "ingredients": [
+    {
+      "type": "forge:partial_nbt",
+      "items": [
+        "primalmagick:concoction"
+      ],
+      "nbt": "{ConcoctionType:\"water\",Potion:\"minecraft:water\"}"
+    },
+    {
+      "item": "primalmagick:essence_crystal_sun"
+    },
+    {
+      "item": "primalmagick:essence_crystal_blood"
+    },
+    {
+      "tag": "forge:crops/nether_wart"
+    },
+    {
+      "item": "minecraft:glistering_melon_slice"
+    }
+  ],
+  "mana": {
+    "sources": {
+      "infernal": 9
+    }
+  },
+  "research": "CONCOCTING_ELIXIRS&&t_discover_blood",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:concoction",
+    "tag": {
+      "ConcoctionDoses": 9,
+      "ConcoctionType": "elixir",
+      "Potion": "minecraft:healing"
+    }
+  }
+}

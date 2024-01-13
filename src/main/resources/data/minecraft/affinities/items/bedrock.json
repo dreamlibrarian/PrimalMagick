@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:bedrock",
-  "set": {
-    "earth": 20,
-    "void": 20
-  }
-}

@@ -1,6 +1,6 @@
 package com.verdantartifice.primalmagick.common.effects;
 
-import com.verdantartifice.primalmagick.common.misc.DamageSourcesPM;
+import com.verdantartifice.primalmagick.common.damagesource.DamageSourcesPM;
 
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -19,11 +19,11 @@ public class BleedingEffect extends MobEffect {
 
     @Override
     public void applyEffectTick(LivingEntity entityLivingBaseIn, int amplifier) {
-        entityLivingBaseIn.hurt(DamageSourcesPM.BLEEDING, (float)(1 << Math.max(0, amplifier)));
+        entityLivingBaseIn.hurt(DamageSourcesPM.bleeding(entityLivingBaseIn.level()), (float)(1 << Math.max(0, amplifier)));
     }
     
     @Override
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return (duration % 40 == 0);
     }
 }

@@ -11,7 +11,9 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.verdantartifice.primalmagick.PrimalMagick;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.IResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchKeyFactory;
+import com.verdantartifice.primalmagick.common.research.ResearchName;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -20,11 +22,13 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class ProjectBuilder {
     protected final ResourceLocation key;
     protected final List<IFinishedProjectMaterial> materialOptions = new ArrayList<>();
+    protected final List<IFinishedProjectReward> otherRewards = new ArrayList<>();
     protected final List<ResourceLocation> aidBlocks = new ArrayList<>();
-    protected SimpleResearchKey requiredResearch;
+    protected IResearchKey requiredResearch;
     protected Optional<Integer> requiredMaterialCountOverride = Optional.empty();
     protected Optional<Double> baseSuccessChanceOverride = Optional.empty();
     protected double rewardMultiplier = 0.25D;
+    protected Optional<IFinishedWeightFunction> weightFunction = Optional.empty();
     
     protected ProjectBuilder(@Nonnull ResourceLocation key) {
         this.key = key;
@@ -47,14 +51,22 @@ public class ProjectBuilder {
         return this;
     }
     
-    public ProjectBuilder requiredResearch(@Nullable SimpleResearchKey key) {
+    public ProjectBuilder otherReward(@Nonnull IFinishedProjectReward reward) {
+        this.otherRewards.add(reward);
+        return this;
+    }
+    
+    public ProjectBuilder requiredResearch(@Nullable IResearchKey key) {
         this.requiredResearch = key;
         return this;
     }
     
+    public ProjectBuilder requiredResearch(@Nullable ResearchName key) {
+        return requiredResearch(key.simpleKey());
+    }
+    
     public ProjectBuilder requiredResearch(@Nullable String keyStr) {
-        this.requiredResearch = SimpleResearchKey.parse(keyStr);
-        return this;
+        return requiredResearch(ResearchKeyFactory.parse(keyStr));
     }
     
     public ProjectBuilder materialCountOverride(int count) {
@@ -79,8 +91,13 @@ public class ProjectBuilder {
     
     public ProjectBuilder aid(@Nullable Block block) {
         if (block != null) {
-            this.aidBlocks.add(block.getRegistryName());
+            this.aidBlocks.add(ForgeRegistries.BLOCKS.getKey(block));
         }
+        return this;
+    }
+    
+    public ProjectBuilder weightFunction(@Nullable IFinishedWeightFunction weight) {
+        this.weightFunction = Optional.ofNullable(weight);
         return this;
     }
     
@@ -121,27 +138,32 @@ public class ProjectBuilder {
     
     public void build(Consumer<IFinishedProject> consumer, ResourceLocation id) {
         this.validate(id);
-        consumer.accept(new ProjectBuilder.Result(this.key, this.materialOptions, this.requiredResearch, this.requiredMaterialCountOverride, this.baseSuccessChanceOverride, this.rewardMultiplier, this.aidBlocks));
+        consumer.accept(new ProjectBuilder.Result(this.key, this.materialOptions, this.otherRewards, this.requiredResearch, this.requiredMaterialCountOverride, this.baseSuccessChanceOverride, this.rewardMultiplier, this.aidBlocks, this.weightFunction));
     }
     
     public static class Result implements IFinishedProject {
         protected final ResourceLocation key;
         protected final List<IFinishedProjectMaterial> materialOptions;
-        protected final SimpleResearchKey requiredResearch;
+        protected final List<IFinishedProjectReward> otherRewards;
+        protected final IResearchKey requiredResearch;
         protected final Optional<Integer> requiredMaterialCountOverride;
         protected final Optional<Double> baseSuccessChanceOverride;
         protected final double rewardMultiplier;
         protected final List<ResourceLocation> aidBlocks;
+        protected final Optional<IFinishedWeightFunction> weightFunction;
         
-        public Result(@Nonnull ResourceLocation key, @Nonnull List<IFinishedProjectMaterial> materialOptions, @Nullable SimpleResearchKey requiredResearch, @Nonnull Optional<Integer> materialCount, 
-                @Nonnull Optional<Double> successChance, double rewardMultiplier, @Nonnull List<ResourceLocation> aidBlocks) {
+        public Result(@Nonnull ResourceLocation key, @Nonnull List<IFinishedProjectMaterial> materialOptions, @Nonnull List<IFinishedProjectReward> otherRewards, 
+                @Nullable IResearchKey requiredResearch, @Nonnull Optional<Integer> materialCount, @Nonnull Optional<Double> successChance, double rewardMultiplier, 
+                @Nonnull List<ResourceLocation> aidBlocks, @Nonnull Optional<IFinishedWeightFunction> weightFunction) {
             this.key = key;
             this.materialOptions = materialOptions;
+            this.otherRewards = otherRewards;
             this.requiredResearch = requiredResearch;
             this.requiredMaterialCountOverride = materialCount;
             this.baseSuccessChanceOverride = successChance;
             this.rewardMultiplier = rewardMultiplier;
             this.aidBlocks = aidBlocks;
+            this.weightFunction = weightFunction;
         }
 
         @Override
@@ -174,6 +196,18 @@ public class ProjectBuilder {
                 materialsArray.add(material.getMaterialJson());
             }
             json.add("material_options", materialsArray);
+            
+            if (!this.otherRewards.isEmpty()) {
+                JsonArray rewardsArray = new JsonArray();
+                for (IFinishedProjectReward reward : this.otherRewards) {
+                    rewardsArray.add(reward.getRewardJson());
+                }
+                json.add("other_rewards", rewardsArray);
+            }
+            
+            this.weightFunction.ifPresent(weight -> {
+                json.add("weight_function", weight.getWeightJson());
+            });
         }
     }
 }

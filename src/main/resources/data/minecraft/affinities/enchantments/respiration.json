@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:respiration",
-  "multiplier": {
-    "sea": 1
-  }
-}

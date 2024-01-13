@@ -2,60 +2,58 @@ package com.verdantartifice.primalmagick.client.gui.widgets.research_table;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.client.util.GuiUtils;
 import com.verdantartifice.primalmagick.common.theorycrafting.ItemTagProjectMaterial;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Registry;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.tags.SerializationTags;
-import net.minecraft.tags.Tag;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Display widget for an item tag research project material.  Used on the research table screen.
  * 
  * @author Daedalus4096
  */
-public class ItemTagProjectMaterialWidget extends AbstractProjectMaterialWidget {
-    protected ItemTagProjectMaterial material;
-    
+public class ItemTagProjectMaterialWidget extends AbstractProjectMaterialWidget<ItemTagProjectMaterial> {
     public ItemTagProjectMaterialWidget(ItemTagProjectMaterial material, int x, int y, Set<Block> surroundings) {
         super(material, x, y, surroundings);
-        this.material = material;
     }
     
     @Override
-    public void renderButton(PoseStack matrixStack, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
+    public void renderWidget(GuiGraphics guiGraphics, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
         // Draw time-selected stack icon and, if applicable, amount string
         Minecraft mc = Minecraft.getInstance();
         ItemStack toDisplay = this.getStackToDisplay();
         if (!toDisplay.isEmpty()) {
-            GuiUtils.renderItemStack(matrixStack, toDisplay, this.x, this.y, this.getMessage().getString(), false);
+            GuiUtils.renderItemStack(guiGraphics, toDisplay, this.getX(), this.getY(), this.getMessage().getString(), false);
             if (this.material.getQuantity() > 1) {
-                Component amountText = new TextComponent(Integer.toString(this.material.getQuantity()));
+                Component amountText = Component.literal(Integer.toString(this.material.getQuantity()));
                 int width = mc.font.width(amountText);
-                matrixStack.pushPose();
-                matrixStack.translate(this.x + 16 - width / 2, this.y + 12, 500.0F);
-                matrixStack.scale(0.5F, 0.5F, 0.5F);
-                mc.font.drawShadow(matrixStack, amountText, 0.0F, 0.0F, Color.WHITE.getRGB());
-                matrixStack.popPose();
+                guiGraphics.pose().pushPose();
+                guiGraphics.pose().translate(this.getX() + 16 - width / 2, this.getY() + 12, 200.0F);
+                guiGraphics.pose().scale(0.5F, 0.5F, 0.5F);
+                guiGraphics.drawString(mc.font, amountText, 0, 0, Color.WHITE.getRGB());
+                guiGraphics.pose().popPose();
             }
         }
         
         // Draw base class stuff
-        super.renderButton(matrixStack, p_renderButton_1_, p_renderButton_2_, p_renderButton_3_);
+        super.renderWidget(guiGraphics, p_renderButton_1_, p_renderButton_2_, p_renderButton_3_);
     }
     
     @Override
@@ -63,15 +61,25 @@ public class ItemTagProjectMaterialWidget extends AbstractProjectMaterialWidget 
         Minecraft mc = Minecraft.getInstance();
         ItemStack stack = this.getStackToDisplay();
         List<Component> textList = new ArrayList<>();
-        textList.add(stack.getHoverName().copy().withStyle(stack.getItem().getRarity(stack).color));
-        stack.getItem().appendHoverText(stack, mc.level, textList, mc.options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+        MutableComponent nameComponent = stack.getHoverName().copy();
+        if (nameComponent.getStyle().equals(Style.EMPTY)) {
+            nameComponent = nameComponent.withStyle(stack.getItem().getRarity(stack).getStyleModifier());
+        }
+        if (stack.hasCustomHoverName()) {
+            nameComponent = nameComponent.withStyle(nameComponent.getStyle().applyFormat(ChatFormatting.ITALIC));
+        }
+        textList.add(nameComponent);
+        if (ItemStack.shouldShowInTooltip(stack.getHideFlags(), ItemStack.TooltipPart.ADDITIONAL)) {
+            stack.getItem().appendHoverText(stack, mc.level, textList, mc.options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
+        }
         return textList;
     }
 
     @Nonnull
     protected ItemStack getStackToDisplay() {
-        Tag<Item> itemTag = SerializationTags.getInstance().getOrEmpty(Registry.ITEM_REGISTRY).getTagOrEmpty(this.material.getTagName());
-        Collection<Item> tagContents = itemTag.getValues();
+        TagKey<Item> itemTag = ItemTags.create(this.material.getTagName());
+        List<Item> tagContents = new ArrayList<Item>();
+        ForgeRegistries.ITEMS.tags().getTag(itemTag).forEach(i -> tagContents.add(i));
         if (tagContents != null && !tagContents.isEmpty()) {
             // Cycle through each matching stack of the tag and display them one at a time
             int index = (int)((System.currentTimeMillis() / 1000L) % tagContents.size());

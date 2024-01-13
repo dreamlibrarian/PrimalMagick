@@ -1,0 +1,21 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "#": {
+      "item": "primalmagick:spellcloth"
+    }
+  },
+  "pattern": [
+    "###",
+    "# #",
+    "# #"
+  ],
+  "research": "SPELLCLOTH",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:spellcloth_legs",
+    "tag": {
+      "Damage": 0
+    }
+  }
+}

@@ -13,7 +13,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.verdantartifice.primalmagick.common.capabilities.IPlayerKnowledge;
 import com.verdantartifice.primalmagick.common.capabilities.PrimalMagickCapabilities;
-import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 import com.verdantartifice.primalmagick.common.util.InventoryUtils;
 import com.verdantartifice.primalmagick.common.util.ItemUtils;
@@ -42,8 +41,10 @@ public class ResearchStage {
     protected List<Integer> craftReference = new ArrayList<>();
     protected List<Knowledge> requiredKnowledge = new ArrayList<>();
     protected List<SimpleResearchKey> siblings = new ArrayList<>();
+    protected List<SimpleResearchKey> revelations = new ArrayList<>();
+    protected List<SimpleResearchKey> hints = new ArrayList<>();
     protected CompoundResearchKey requiredResearch;
-    protected SourceList attunements = new SourceList();
+    protected SourceList attunements = SourceList.EMPTY;
     
     protected ResearchStage(@Nonnull ResearchEntry entry, @Nonnull String textTranslationKey) {
         this.researchEntry = entry;
@@ -91,6 +92,12 @@ public class ResearchStage {
         if (obj.has("siblings")) {
             stage.siblings = JsonUtils.toSimpleResearchKeys(obj.get("siblings").getAsJsonArray());
         }
+        if (obj.has("revelations")) {
+            stage.revelations = JsonUtils.toSimpleResearchKeys(obj.get("revelations").getAsJsonArray());
+        }
+        if (obj.has("hints")) {
+            stage.hints = JsonUtils.toSimpleResearchKeys(obj.get("hints").getAsJsonArray());
+        }
         if (obj.has("required_research")) {
             stage.requiredResearch = CompoundResearchKey.parse(obj.get("required_research").getAsJsonArray());
         }
@@ -128,10 +135,16 @@ public class ResearchStage {
         for (int index = 0; index < siblingSize; index++) {
             stage.siblings.add(SimpleResearchKey.parse(buf.readUtf()));
         }
-        stage.requiredResearch = CompoundResearchKey.parse(buf.readUtf());
-        for (Source source : Source.SORTED_SOURCES) {
-            stage.attunements.add(source, buf.readVarInt());
+        int revelationsSize = buf.readVarInt();
+        for (int index = 0; index < revelationsSize; index++) {
+            stage.revelations.add(SimpleResearchKey.parse(buf.readUtf()));
         }
+        int hintsSize = buf.readVarInt();
+        for (int index = 0; index < hintsSize; index++) {
+            stage.hints.add(SimpleResearchKey.parse(buf.readUtf()));
+        }
+        stage.requiredResearch = CompoundResearchKey.parse(buf.readUtf());
+        stage.attunements = SourceList.fromNetwork(buf);
         return stage;
     }
     
@@ -173,10 +186,16 @@ public class ResearchStage {
         for (SimpleResearchKey key : stage.siblings) {
             buf.writeUtf(key.toString());
         }
-        buf.writeUtf(stage.requiredResearch == null ? "" : stage.requiredResearch.toString());
-        for (Source source : Source.SORTED_SOURCES) {
-            buf.writeVarInt(stage.attunements.getAmount(source));
+        buf.writeVarInt(stage.revelations.size());
+        for (SimpleResearchKey key : stage.revelations) {
+            buf.writeUtf(key.toString());
         }
+        buf.writeVarInt(stage.hints.size());
+        for (SimpleResearchKey key : stage.hints) {
+            buf.writeUtf(key.toString());
+        }
+        buf.writeUtf(stage.requiredResearch == null ? "" : stage.requiredResearch.toString());
+        SourceList.toNetwork(buf, stage.attunements);
     }
     
     @Nonnull
@@ -219,9 +238,19 @@ public class ResearchStage {
         return Collections.unmodifiableList(this.siblings);
     }
     
-    @Nullable
+    @Nonnull
+    public List<SimpleResearchKey> getRevelations() {
+        return Collections.unmodifiableList(this.revelations);
+    }
+    
+    @Nonnull
+    public List<SimpleResearchKey> getHints() {
+        return Collections.unmodifiableList(this.hints);
+    }
+    
+    @Nonnull
     public CompoundResearchKey getRequiredResearch() {
-        return this.requiredResearch;
+        return this.requiredResearch == null ? CompoundResearchKey.EMPTY : this.requiredResearch;
     }
     
     @Nonnull
@@ -230,7 +259,7 @@ public class ResearchStage {
     }
     
     public boolean hasPrerequisites() {
-        return !this.mustObtain.isEmpty() || !this.mustCraft.isEmpty() || !this.requiredKnowledge.isEmpty() || this.requiredResearch != null;
+        return !this.mustObtain.isEmpty() || !this.mustCraft.isEmpty() || !this.requiredKnowledge.isEmpty() || (this.requiredResearch != null && !this.requiredResearch.isEmpty());
     }
     
     public boolean arePrerequisitesMet(@Nullable Player player) {

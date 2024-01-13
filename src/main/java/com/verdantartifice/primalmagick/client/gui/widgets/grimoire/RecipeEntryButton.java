@@ -1,9 +1,11 @@
 package com.verdantartifice.primalmagick.client.gui.widgets.grimoire;
 
 import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
+import com.verdantartifice.primalmagick.common.research.topics.OtherResearchTopic;
 
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * GUI button to view the grimoire page for a given recipe.
@@ -13,8 +15,8 @@ import net.minecraft.network.chat.Component;
 public class RecipeEntryButton extends AbstractTopicButton {
     protected String recipeName;
     
-    public RecipeEntryButton(int x, int y, Component text, GrimoireScreen screen, String recipeName) {
-        super(x, y, 123, 12, text, screen, new Handler());
+    public RecipeEntryButton(int x, int y, Component text, GrimoireScreen screen, String recipeName, ItemStack outputStack) {
+        super(x, y, 123, 12, text, screen, ItemIndexIcon.of(outputStack, false), new Handler());
         this.recipeName = recipeName;
     }
     
@@ -26,16 +28,8 @@ public class RecipeEntryButton extends AbstractTopicButton {
         @Override
         public void onPress(Button button) {
             if (button instanceof RecipeEntryButton greb) {
-                // Push the current grimoire topic onto the history stack
-                GrimoireScreen.HISTORY.add(greb.getScreen().getMenu().getTopic());
-                
                 // Set the new grimoire topic and open a new screen for it
-                greb.getScreen().getMenu().setTopic(greb.getRecipeName());
-                greb.getScreen().getMinecraft().setScreen(new GrimoireScreen(
-                    greb.getScreen().getMenu(),
-                    greb.getScreen().getPlayerInventory(),
-                    greb.getScreen().getTitle()
-                ));
+                greb.getScreen().gotoTopic(new OtherResearchTopic(greb.getRecipeName(), 0));
             }
         }
     }

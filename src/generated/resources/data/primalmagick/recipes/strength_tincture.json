@@ -1,0 +1,37 @@
+{
+  "type": "primalmagick:concocting",
+  "group": "strength",
+  "ingredients": [
+    {
+      "type": "forge:partial_nbt",
+      "items": [
+        "primalmagick:concoction"
+      ],
+      "nbt": "{ConcoctionType:\"water\",Potion:\"minecraft:water\"}"
+    },
+    {
+      "item": "primalmagick:essence_dust_earth"
+    },
+    {
+      "tag": "forge:crops/nether_wart"
+    },
+    {
+      "item": "minecraft:blaze_powder"
+    }
+  ],
+  "mana": {
+    "sources": {
+      "infernal": 1
+    }
+  },
+  "research": "CONCOCTING_TINCTURES",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:concoction",
+    "tag": {
+      "ConcoctionDoses": 3,
+      "ConcoctionType": "tincture",
+      "Potion": "minecraft:strength"
+    }
+  }
+}

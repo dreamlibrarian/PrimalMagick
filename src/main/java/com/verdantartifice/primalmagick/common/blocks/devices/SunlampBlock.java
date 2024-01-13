@@ -4,6 +4,9 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.common.blocks.BlocksPM;
 import com.verdantartifice.primalmagick.common.blocks.misc.GlowFieldBlock;
@@ -13,7 +16,6 @@ import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -30,7 +32,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -45,15 +47,16 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * @see {@link com.verdantartifice.primalmagick.common.blocks.misc.GlowFieldBlock}
  */
 public class SunlampBlock extends BaseEntityBlock {
+    protected static final Logger LOGGER = LogManager.getLogger();
     public static final DirectionProperty ATTACHMENT = DirectionProperty.create("attachment", Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.UP, Direction.DOWN);
     
-    protected static final VoxelShape GROUND_SHAPE = VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/sunlamp_ground_base"));
-    protected static final VoxelShape HANGING_SHAPE = VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/sunlamp_hanging_base"));
+    protected static final VoxelShape GROUND_SHAPE = VoxelShapeUtils.fromModel(PrimalMagick.resource("block/sunlamp_ground_base"));
+    protected static final VoxelShape HANGING_SHAPE = VoxelShapeUtils.fromModel(PrimalMagick.resource("block/sunlamp_hanging_base"));
     
     protected final Supplier<GlowFieldBlock> glowSupplier;
     
     public SunlampBlock(Supplier<GlowFieldBlock> glowSupplier) {
-        super(Block.Properties.of(Material.METAL).strength(3.5F).sound(SoundType.LANTERN).lightLevel((state) -> { return 15; }).noOcclusion());
+        super(Block.Properties.of().mapColor(MapColor.METAL).pushReaction(PushReaction.DESTROY).strength(3.5F).sound(SoundType.LANTERN).lightLevel((state) -> { return 15; }).noOcclusion());
         this.registerDefaultState(this.defaultBlockState().setValue(ATTACHMENT, Direction.DOWN));
         this.glowSupplier = glowSupplier;
     }
@@ -86,15 +89,10 @@ public class SunlampBlock extends BaseEntityBlock {
         return Block.canSupportCenter(worldIn, pos.relative(dir), dir.getOpposite());
     }
     
-    @Override
-    public PushReaction getPistonPushReaction(BlockState state) {
-        return PushReaction.DESTROY;
-    }
-    
     @SuppressWarnings("deprecation")
     @Override
     public BlockState updateShape(BlockState stateIn, Direction facing, BlockState facingState, LevelAccessor worldIn, BlockPos currentPos, BlockPos facingPos) {
-        return stateIn.getValue(ATTACHMENT) == facing ? 
+        return stateIn.getValue(ATTACHMENT) == facing && !stateIn.canSurvive(worldIn, currentPos) ? 
                 Blocks.AIR.defaultBlockState() : 
                 super.updateShape(stateIn, facing, facingState, worldIn, currentPos, facingPos);
     }

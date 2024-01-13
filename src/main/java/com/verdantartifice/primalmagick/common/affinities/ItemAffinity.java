@@ -1,6 +1,8 @@
 package com.verdantartifice.primalmagick.common.affinities;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
@@ -10,6 +12,7 @@ import com.google.gson.JsonSyntaxException;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 import com.verdantartifice.primalmagick.common.util.JsonUtils;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -23,6 +26,7 @@ public class ItemAffinity extends AbstractAffinity {
     protected SourceList setValues;
     protected SourceList addValues;
     protected SourceList removeValues;
+    protected Optional<ResourceLocation> sourceRecipe = Optional.empty();
     
     protected ItemAffinity(@Nonnull ResourceLocation target) {
         super(target);
@@ -42,28 +46,31 @@ public class ItemAffinity extends AbstractAffinity {
     public IAffinitySerializer<?> getSerializer() {
         return SERIALIZER;
     }
+    
+    public Optional<ResourceLocation> getSourceRecipe() {
+        return this.sourceRecipe;
+    }
+    
+    public void setSourceRecipe(Optional<ResourceLocation> sourceRecipe) {
+        this.sourceRecipe = sourceRecipe;
+    }
 
     @Override
-    protected SourceList calculateTotal(@Nonnull RecipeManager recipeManager, @Nonnull List<ResourceLocation> history) {
+    protected CompletableFuture<SourceList> calculateTotalAsync(@Nonnull RecipeManager recipeManager, @Nonnull RegistryAccess registryAccess, @Nonnull List<ResourceLocation> history) {
         if (this.setValues != null) {
-            return this.setValues;
+            return CompletableFuture.completedFuture(this.setValues);
         } else if (this.baseEntryId != null) {
-            if (this.baseEntry == null) {
-                this.baseEntry = AffinityManager.getInstance().getOrGenerateItemAffinity(this.baseEntryId, recipeManager, history);
-                if (this.baseEntry == null) {
-                    return null;
-                }
-            }
-            SourceList retVal = this.baseEntry.getTotal(recipeManager, history);
-            if (retVal != null) {
+            return AffinityManager.getInstance().getOrGenerateItemAffinityAsync(this.baseEntryId, recipeManager, registryAccess, history).thenCompose(baseEntry -> {
+                return baseEntry == null ? CompletableFuture.completedFuture(SourceList.EMPTY) : baseEntry.getTotalAsync(recipeManager, registryAccess, history);
+            }).thenApply(baseSources -> {
                 if (this.addValues != null) {
-                    retVal = retVal.add(this.addValues);
+                    baseSources = baseSources.add(this.addValues);
                 }
                 if (this.removeValues != null) {
-                    retVal = retVal.remove(this.removeValues);
+                    baseSources = baseSources.remove(this.removeValues);
                 }
-            }
-            return retVal;
+                return baseSources;
+            });
         } else {
             throw new IllegalStateException("Item affinity has neither set values nor a base entry");
         }

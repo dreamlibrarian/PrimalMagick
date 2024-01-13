@@ -1,8 +1,0 @@
-{
-  "type": "entity_type",
-  "target": "minecraft:skeleton",
-  "values": {
-    "moon": 10,
-    "blood": 10
-  }
-}

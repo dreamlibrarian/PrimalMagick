@@ -14,7 +14,7 @@ import com.verdantartifice.primalmagick.common.stats.StatsPM;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -53,7 +53,7 @@ public class SpellPackage implements INBTSerializable<CompoundTag> {
     @Nonnull
     public Component getName() {
         // Color spell names according to their rarity, like with items
-        return new TextComponent(this.name).withStyle(this.getRarity().color);
+        return Component.literal(this.name).withStyle(this.getRarity().getStyleModifier());
     }
     
     public void setName(@Nullable String name) {
@@ -150,12 +150,12 @@ public class SpellPackage implements INBTSerializable<CompoundTag> {
         // Calculate the total mana cost of this spell package.  The spell's base cost is determined by
         // its payload, then modified by its vehicle and mods, if present.
         if (this.payload == null) {
-            return new SourceList();
+            return SourceList.EMPTY;
         }
         
         int baseManaCost = this.payload.getBaseManaCost();
         if (baseManaCost == 0) {
-            return new SourceList();
+            return SourceList.EMPTY;
         }
         
         Source source = this.payload.getSource();
@@ -176,7 +176,7 @@ public class SpellPackage implements INBTSerializable<CompoundTag> {
             multiplier *= this.secondaryMod.getManaCostMultiplier();
         }
         
-        return new SourceList().add(source, (baseManaCost + baseModifier) * multiplier);
+        return SourceList.EMPTY.add(source, (baseManaCost + baseModifier) * multiplier);
     }
     
     public void cast(Level world, LivingEntity caster, ItemStack spellSource) {
@@ -230,5 +230,13 @@ public class SpellPackage implements INBTSerializable<CompoundTag> {
         } else {
             return secondary;
         }
+    }
+    
+    @Nullable
+    public ResourceLocation getIcon() {
+        if (this.payload != null) {
+            return this.payload.getSource().getImage();
+        }
+        return null;
     }
 }

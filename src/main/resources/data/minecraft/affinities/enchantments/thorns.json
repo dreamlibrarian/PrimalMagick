@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:thorns",
-  "multiplier": {
-    "blood": 1
-  }
-}

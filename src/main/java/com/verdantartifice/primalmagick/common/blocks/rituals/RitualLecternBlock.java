@@ -2,10 +2,11 @@ package com.verdantartifice.primalmagick.common.blocks.rituals;
 
 import java.awt.Color;
 import java.util.Map;
-import java.util.Random;
 
 import com.google.common.collect.Maps;
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
+import com.verdantartifice.primalmagick.common.network.PacketHandler;
+import com.verdantartifice.primalmagick.common.network.packets.misc.OpenEnchantedBookScreenPacket;
 import com.verdantartifice.primalmagick.common.rituals.IRitualPropBlock;
 import com.verdantartifice.primalmagick.common.tiles.rituals.RitualLecternTileEntity;
 import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
@@ -13,15 +14,17 @@ import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Containers;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -38,7 +41,8 @@ import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -66,7 +70,7 @@ public class RitualLecternBlock extends BaseEntityBlock implements IRitualPropBl
     });
     
     public RitualLecternBlock() {
-        super(Block.Properties.of(Material.WOOD).strength(2.5F).sound(SoundType.WOOD));
+        super(Block.Properties.of().mapColor(MapColor.WOOD).ignitedByLava().instrument(NoteBlockInstrument.BASS).strength(2.5F).sound(SoundType.WOOD));
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH).setValue(HAS_BOOK, Boolean.FALSE));
     }
     
@@ -121,13 +125,12 @@ public class RitualLecternBlock extends BaseEntityBlock implements IRitualPropBl
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         if (!worldIn.isClientSide && handIn == InteractionHand.MAIN_HAND) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof RitualLecternTileEntity) {
-                RitualLecternTileEntity lecternTile = (RitualLecternTileEntity)tile;
-                if (lecternTile.getItem(0).isEmpty() && player.getItemInHand(handIn).getItem() == Items.ENCHANTED_BOOK) {
+            if (tile instanceof RitualLecternTileEntity lecternTile) {
+                ItemStack bookStack = lecternTile.getItem();
+                if (bookStack.isEmpty() && player.getItemInHand(handIn).is(Items.ENCHANTED_BOOK)) {
                     // When activating an empty lectern with an enchanted book in hand, place it on the lectern
-                    ItemStack stack = player.getItemInHand(handIn).copy();
-                    stack.setCount(1);
-                    lecternTile.setItem(0, stack);
+                    ItemStack stack = player.getItemInHand(handIn).copyWithCount(1);
+                    lecternTile.setItem(stack);
                     player.getItemInHand(handIn).shrink(1);
                     if (player.getItemInHand(handIn).getCount() <= 0) {
                         player.setItemInHand(handIn, ItemStack.EMPTY);
@@ -142,15 +145,27 @@ public class RitualLecternBlock extends BaseEntityBlock implements IRitualPropBl
                     }
 
                     return InteractionResult.SUCCESS;
-                } else if (!lecternTile.getItem(0).isEmpty() && player.getItemInHand(handIn).isEmpty()) {
-                    // When activating a full lectern with an empty hand, pick up the book
-                    ItemStack stack = lecternTile.getItem(0).copy();
-                    lecternTile.setItem(0, ItemStack.EMPTY);
-                    player.setItemInHand(handIn, stack);
-                    player.getInventory().setChanged();
-                    worldIn.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
-                    worldIn.setBlock(pos, state.setValue(HAS_BOOK, Boolean.FALSE), Block.UPDATE_ALL);
-                    return InteractionResult.SUCCESS;
+                } else if (!bookStack.isEmpty()) {
+                    if (player.isSecondaryUseActive()) {
+                        // When activating a full lectern while sneaking, pick up the book
+                        ItemStack stack = bookStack.copy();
+                        lecternTile.setItem(ItemStack.EMPTY);
+                        if (!player.getInventory().add(stack)) {
+                            player.drop(stack, false);
+                        }
+                        player.getInventory().setChanged();
+                        worldIn.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
+                        worldIn.setBlock(pos, state.setValue(HAS_BOOK, Boolean.FALSE), Block.UPDATE_ALL);
+                        return InteractionResult.SUCCESS;
+                    } else {
+                        // When activating a full lectern while not sneaking, read the book
+                        if (player instanceof ServerPlayer serverPlayer) {
+                            EnchantmentHelper.getEnchantments(bookStack).entrySet().stream().sorted((e1, e2) -> -Integer.compare(e1.getValue(), e2.getValue())).findFirst().ifPresent(entry -> {
+                                PacketHandler.sendToPlayer(new OpenEnchantedBookScreenPacket(entry.getKey()), serverPlayer);
+                            });
+                        }
+                        return InteractionResult.SUCCESS;
+                    }
                 }
             }
         }
@@ -166,8 +181,8 @@ public class RitualLecternBlock extends BaseEntityBlock implements IRitualPropBl
         }
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof RitualLecternTileEntity) {
-                Containers.dropContents(worldIn, pos, (RitualLecternTileEntity)tile);
+            if (tile instanceof RitualLecternTileEntity lecternTile) {
+                lecternTile.dropContents(worldIn, pos);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
         }
@@ -180,7 +195,7 @@ public class RitualLecternBlock extends BaseEntityBlock implements IRitualPropBl
     }
     
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show spell sparkles if receiving salt power
         if (this.isBlockSaltPowered(worldIn, pos)) {
             FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Color.WHITE.getRGB());
@@ -199,16 +214,12 @@ public class RitualLecternBlock extends BaseEntityBlock implements IRitualPropBl
 
     @Override
     public boolean isPropActivated(BlockState state, Level world, BlockPos pos) {
-        if (state != null && state.getBlock() instanceof RitualLecternBlock) {
-            return state.getValue(HAS_BOOK);
-        } else {
-            return false;
-        }
+        return state != null && state.hasProperty(HAS_BOOK) && state.getValue(HAS_BOOK);
     }
 
     @Override
     public String getPropTranslationKey() {
-        return "primalmagick.ritual.prop.ritual_lectern";
+        return "ritual.primalmagick.prop.ritual_lectern";
     }
 
     public float getUsageStabilityBonus() {

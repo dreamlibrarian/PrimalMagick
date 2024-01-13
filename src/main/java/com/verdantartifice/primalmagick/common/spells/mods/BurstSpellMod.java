@@ -9,14 +9,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 import com.verdantartifice.primalmagick.common.spells.SpellProperty;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Explosion;
@@ -39,7 +38,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class BurstSpellMod extends AbstractSpellMod {
     public static final String TYPE = "burst";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_MOD_BURST"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_MOD_BURST.get().compoundKey();
 
     public BurstSpellMod() {
         super();
@@ -58,8 +57,8 @@ public class BurstSpellMod extends AbstractSpellMod {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("radius", new SpellProperty("radius", "primalmagick.spell.property.radius", 1, 5));
-        propMap.put("power", new SpellProperty("power", "primalmagick.spell.property.power", 0, 5));
+        propMap.put("radius", new SpellProperty("radius", "spells.primalmagick.property.radius", 1, 5));
+        propMap.put("power", new SpellProperty("power", "spells.primalmagick.property.power", 0, 5));
         return propMap;
     }
     
@@ -84,12 +83,12 @@ public class BurstSpellMod extends AbstractSpellMod {
         Set<HitResult> retVal = new HashSet<>();
         Set<BlockPos> affectedBlocks = new HashSet<>();
         Vec3 hitVec = origin.getLocation();
-        BlockPos hitPos = new BlockPos(hitVec);
+        BlockPos hitPos = BlockPos.containing(hitVec);
         int radius = this.getRadiusBlocks();
         int power = this.getBlastPower(spell, spellSource);
         double sqRadius = (double)(radius * radius);
         int searchRadius = radius + 1;
-        Explosion explosion = new Explosion(world, null, hitVec.x, hitVec.y, hitVec.z, (float)power, false, Explosion.BlockInteraction.NONE);
+        Explosion explosion = new Explosion(world, null, hitVec.x, hitVec.y, hitVec.z, (float)power, false, Explosion.BlockInteraction.KEEP);
         
         // Calculate blasted blocks
         for (int i = 0; i < 16; i++) {
@@ -103,7 +102,7 @@ public class BurstSpellMod extends AbstractSpellMod {
                         
                         while (remainingPower >= 0.0F && curVec.distanceToSqr(hitVec) < sqRadius) {
                             // Add the current block to the result set if it hasn't already been hit
-                            BlockPos curPos = new BlockPos(curVec);
+                            BlockPos curPos = BlockPos.containing(curVec);
                             if (affectedBlocks.add(curPos)) {
                                 Vec3 relVec = hitVec.subtract(curVec);
                                 Direction dir = Direction.getNearest(relVec.x, relVec.y, relVec.z);
@@ -148,6 +147,6 @@ public class BurstSpellMod extends AbstractSpellMod {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.mod.detail_tooltip." + this.getModType(), this.getRadiusBlocks(), this.getBlastPower(spell, spellSource));
+        return Component.translatable("spells.primalmagick.mod." + this.getModType() + ".detail_tooltip", this.getRadiusBlocks(), this.getBlastPower(spell, spellSource));
     }
 }

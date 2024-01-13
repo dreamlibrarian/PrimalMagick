@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:brain_coral",
-  "base": "minecraft:dead_brain_coral",
-  "add": {
-    "sun": 5
-  }
-}

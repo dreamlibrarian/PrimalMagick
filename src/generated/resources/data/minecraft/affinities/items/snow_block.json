@@ -1,0 +1,8 @@
+{
+  "type": "item",
+  "set": {
+    "sea": 5,
+    "sky": 5
+  },
+  "target": "minecraft:snow_block"
+}

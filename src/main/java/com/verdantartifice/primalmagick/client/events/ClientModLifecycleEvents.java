@@ -1,25 +1,29 @@
 package com.verdantartifice.primalmagick.client.events;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
-import com.verdantartifice.primalmagick.client.config.KeyBindings;
 import com.verdantartifice.primalmagick.client.gui.AnalysisTableScreen;
 import com.verdantartifice.primalmagick.client.gui.ArcaneWorkbenchScreen;
 import com.verdantartifice.primalmagick.client.gui.CalcinatorScreen;
 import com.verdantartifice.primalmagick.client.gui.ConcocterScreen;
 import com.verdantartifice.primalmagick.client.gui.DissolutionChamberScreen;
+import com.verdantartifice.primalmagick.client.gui.EssenceCaskScreen;
 import com.verdantartifice.primalmagick.client.gui.EssenceTransmuterScreen;
-import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
 import com.verdantartifice.primalmagick.client.gui.HoneyExtractorScreen;
+import com.verdantartifice.primalmagick.client.gui.InfernalFurnaceScreen;
+import com.verdantartifice.primalmagick.client.gui.ManaBatteryScreen;
 import com.verdantartifice.primalmagick.client.gui.ResearchTableScreen;
 import com.verdantartifice.primalmagick.client.gui.RunecarvingTableScreen;
 import com.verdantartifice.primalmagick.client.gui.RunescribingAltarBasicScreen;
 import com.verdantartifice.primalmagick.client.gui.RunescribingAltarEnchantedScreen;
 import com.verdantartifice.primalmagick.client.gui.RunescribingAltarForbiddenScreen;
 import com.verdantartifice.primalmagick.client.gui.RunescribingAltarHeavenlyScreen;
+import com.verdantartifice.primalmagick.client.gui.RunicGrindstoneScreen;
 import com.verdantartifice.primalmagick.client.gui.SpellcraftingAltarScreen;
 import com.verdantartifice.primalmagick.client.gui.WandAssemblyTableScreen;
 import com.verdantartifice.primalmagick.client.gui.WandChargerScreen;
+import com.verdantartifice.primalmagick.client.gui.WandGlamourTableScreen;
 import com.verdantartifice.primalmagick.client.gui.WandInscriptionTableScreen;
+import com.verdantartifice.primalmagick.client.recipe_book.ArcaneSearchRegistry;
 import com.verdantartifice.primalmagick.client.renderers.tile.AutoChargerTER;
 import com.verdantartifice.primalmagick.client.renderers.tile.ManaFontTER;
 import com.verdantartifice.primalmagick.client.renderers.tile.OfferingPedestalTER;
@@ -28,21 +32,18 @@ import com.verdantartifice.primalmagick.client.renderers.tile.RitualBellTER;
 import com.verdantartifice.primalmagick.client.renderers.tile.RitualLecternTER;
 import com.verdantartifice.primalmagick.client.renderers.tile.RunescribingAltarTER;
 import com.verdantartifice.primalmagick.client.renderers.tile.SanguineCrucibleTER;
+import com.verdantartifice.primalmagick.client.renderers.tile.SpellcraftingAltarTER;
 import com.verdantartifice.primalmagick.client.renderers.tile.WandChargerTER;
-import com.verdantartifice.primalmagick.client.tooltips.ClientAffinityTooltipComponent;
-import com.verdantartifice.primalmagick.common.affinities.AffinityTooltipComponent;
-import com.verdantartifice.primalmagick.common.blocks.BlocksPM;
-import com.verdantartifice.primalmagick.common.containers.ContainersPM;
+import com.verdantartifice.primalmagick.client.renderers.tile.WindGeneratorTER;
 import com.verdantartifice.primalmagick.common.items.ItemsPM;
 import com.verdantartifice.primalmagick.common.items.entities.FlyingCarpetItem;
 import com.verdantartifice.primalmagick.common.items.misc.ArcanometerItem;
+import com.verdantartifice.primalmagick.common.menus.MenuTypesPM;
 import com.verdantartifice.primalmagick.common.tiles.TileEntityTypesPM;
 import com.verdantartifice.primalmagick.common.util.RayTraceUtils;
 
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.client.renderer.item.ItemPropertyFunction;
@@ -53,7 +54,6 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -68,38 +68,36 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 public class ClientModLifecycleEvents {
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
-        registerKeybinds();
         registerScreens();
         registerTERs();
         registerItemProperties(event);
-        setRenderLayers();
-        registerTooltipComponentFactories();
+        registerSearchTrees(event);
     }
 
-    private static void registerKeybinds() {
-        KeyBindings.init();
-    }
-    
     private static void registerScreens() {
-        // Register screen factories for each container
-        MenuScreens.register(ContainersPM.GRIMOIRE.get(), GrimoireScreen::new);
-        MenuScreens.register(ContainersPM.ARCANE_WORKBENCH.get(), ArcaneWorkbenchScreen::new);
-        MenuScreens.register(ContainersPM.WAND_ASSEMBLY_TABLE.get(), WandAssemblyTableScreen::new);
-        MenuScreens.register(ContainersPM.ANALYSIS_TABLE.get(), AnalysisTableScreen::new);
-        MenuScreens.register(ContainersPM.CALCINATOR.get(), CalcinatorScreen::new);
-        MenuScreens.register(ContainersPM.WAND_INSCRIPTION_TABLE.get(), WandInscriptionTableScreen::new);
-        MenuScreens.register(ContainersPM.SPELLCRAFTING_ALTAR.get(), SpellcraftingAltarScreen::new);
-        MenuScreens.register(ContainersPM.WAND_CHARGER.get(), WandChargerScreen::new);
-        MenuScreens.register(ContainersPM.RESEARCH_TABLE.get(), ResearchTableScreen::new);
-        MenuScreens.register(ContainersPM.RUNESCRIBING_ALTAR_BASIC.get(), RunescribingAltarBasicScreen::new);
-        MenuScreens.register(ContainersPM.RUNESCRIBING_ALTAR_ENCHANTED.get(), RunescribingAltarEnchantedScreen::new);
-        MenuScreens.register(ContainersPM.RUNESCRIBING_ALTAR_FORBIDDEN.get(), RunescribingAltarForbiddenScreen::new);
-        MenuScreens.register(ContainersPM.RUNESCRIBING_ALTAR_HEAVENLY.get(), RunescribingAltarHeavenlyScreen::new);
-        MenuScreens.register(ContainersPM.RUNECARVING_TABLE.get(), RunecarvingTableScreen::new);
-        MenuScreens.register(ContainersPM.HONEY_EXTRACTOR.get(), HoneyExtractorScreen::new);
-        MenuScreens.register(ContainersPM.CONCOCTER.get(), ConcocterScreen::new);
-        MenuScreens.register(ContainersPM.ESSENCE_TRANSMUTER.get(), EssenceTransmuterScreen::new);
-        MenuScreens.register(ContainersPM.DISSOLUTION_CHAMBER.get(), DissolutionChamberScreen::new);
+        // Register screen factories for each menu
+        MenuScreens.register(MenuTypesPM.ARCANE_WORKBENCH.get(), ArcaneWorkbenchScreen::new);
+        MenuScreens.register(MenuTypesPM.WAND_ASSEMBLY_TABLE.get(), WandAssemblyTableScreen::new);
+        MenuScreens.register(MenuTypesPM.ANALYSIS_TABLE.get(), AnalysisTableScreen::new);
+        MenuScreens.register(MenuTypesPM.CALCINATOR.get(), CalcinatorScreen::new);
+        MenuScreens.register(MenuTypesPM.WAND_INSCRIPTION_TABLE.get(), WandInscriptionTableScreen::new);
+        MenuScreens.register(MenuTypesPM.SPELLCRAFTING_ALTAR.get(), SpellcraftingAltarScreen::new);
+        MenuScreens.register(MenuTypesPM.WAND_CHARGER.get(), WandChargerScreen::new);
+        MenuScreens.register(MenuTypesPM.RESEARCH_TABLE.get(), ResearchTableScreen::new);
+        MenuScreens.register(MenuTypesPM.RUNESCRIBING_ALTAR_BASIC.get(), RunescribingAltarBasicScreen::new);
+        MenuScreens.register(MenuTypesPM.RUNESCRIBING_ALTAR_ENCHANTED.get(), RunescribingAltarEnchantedScreen::new);
+        MenuScreens.register(MenuTypesPM.RUNESCRIBING_ALTAR_FORBIDDEN.get(), RunescribingAltarForbiddenScreen::new);
+        MenuScreens.register(MenuTypesPM.RUNESCRIBING_ALTAR_HEAVENLY.get(), RunescribingAltarHeavenlyScreen::new);
+        MenuScreens.register(MenuTypesPM.RUNECARVING_TABLE.get(), RunecarvingTableScreen::new);
+        MenuScreens.register(MenuTypesPM.HONEY_EXTRACTOR.get(), HoneyExtractorScreen::new);
+        MenuScreens.register(MenuTypesPM.CONCOCTER.get(), ConcocterScreen::new);
+        MenuScreens.register(MenuTypesPM.ESSENCE_TRANSMUTER.get(), EssenceTransmuterScreen::new);
+        MenuScreens.register(MenuTypesPM.DISSOLUTION_CHAMBER.get(), DissolutionChamberScreen::new);
+        MenuScreens.register(MenuTypesPM.ESSENCE_CASK.get(), EssenceCaskScreen::new);
+        MenuScreens.register(MenuTypesPM.WAND_GLAMOUR_TABLE.get(), WandGlamourTableScreen::new);
+        MenuScreens.register(MenuTypesPM.RUNIC_GRINDSTONE.get(), RunicGrindstoneScreen::new);
+        MenuScreens.register(MenuTypesPM.INFERNAL_FURNACE.get(), InfernalFurnaceScreen::new);
+        MenuScreens.register(MenuTypesPM.MANA_BATTERY.get(), ManaBatteryScreen::new);
     }
     
     private static void registerTERs() {
@@ -114,6 +112,8 @@ public class ClientModLifecycleEvents {
         BlockEntityRenderers.register(TileEntityTypesPM.RUNESCRIBING_ALTAR.get(), RunescribingAltarTER::new);
         BlockEntityRenderers.register(TileEntityTypesPM.SANGUINE_CRUCIBLE.get(), SanguineCrucibleTER::new);
         BlockEntityRenderers.register(TileEntityTypesPM.AUTO_CHARGER.get(), AutoChargerTER::new);
+        BlockEntityRenderers.register(TileEntityTypesPM.SPELLCRAFTING_ALTAR.get(), SpellcraftingAltarTER::new);
+        BlockEntityRenderers.register(TileEntityTypesPM.WIND_GENERATOR.get(), WindGeneratorTER::new);
     }
     
     private static void registerItemProperties(FMLClientSetupEvent event) {
@@ -205,79 +205,9 @@ public class ClientModLifecycleEvents {
         });
     }
     
-    private static void setRenderLayers() {
-        // Set the render layers for any blocks that don't use the default
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_SAPLING.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_LEAVES.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_LOG.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_PILLAR.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_PLANKS.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_SLAB.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_STAIRS.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.MOONWOOD_WOOD.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STRIPPED_MOONWOOD_LOG.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STRIPPED_MOONWOOD_WOOD.get(), RenderType.translucent());
-
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_SAPLING.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_LEAVES.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_LOG.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_PILLAR.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_PLANKS.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_SLAB.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_STAIRS.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNWOOD_WOOD.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STRIPPED_SUNWOOD_LOG.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STRIPPED_SUNWOOD_WOOD.get(), RenderType.translucent());
-        
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.HALLOWOOD_SAPLING.get(), RenderType.cutout());
-        
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SALT_TRAIL.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SUNLAMP.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SPIRIT_LANTERN.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.BLOODLETTER.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.CONCOCTER.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.CELESTIAL_HARP.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.HONEY_EXTRACTOR.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.RUNECARVING_TABLE.get(), RenderType.cutout());
-
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SKYGLASS.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_BLACK.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_BLUE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_BROWN.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_CYAN.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_GRAY.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_GREEN.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_LIGHT_BLUE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_LIGHT_GRAY.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_LIME.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_MAGENTA.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_ORANGE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PINK.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PURPLE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_RED.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_WHITE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_YELLOW.get(), RenderType.translucent());
-        
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.SKYGLASS_PANE.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_BLACK.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_BLUE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_BROWN.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_CYAN.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_GRAY.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_GREEN.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_LIGHT_BLUE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_LIGHT_GRAY.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_LIME.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_MAGENTA.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_ORANGE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_PINK.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_PURPLE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_RED.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_WHITE.get(), RenderType.translucent());
-        ItemBlockRenderTypes.setRenderLayer(BlocksPM.STAINED_SKYGLASS_PANE_YELLOW.get(), RenderType.translucent());
-    }
-
-    private static void registerTooltipComponentFactories() {
-        MinecraftForgeClient.registerTooltipComponentFactory(AffinityTooltipComponent.class, ClientAffinityTooltipComponent::new);
+    private static void registerSearchTrees(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            ArcaneSearchRegistry.registerSearchTree();
+        });
     }
 }

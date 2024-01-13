@@ -1,0 +1,9 @@
+{
+  "type": "item",
+  "set": {
+    "blood": 11,
+    "earth": 4,
+    "sun": 4
+  },
+  "target": "minecraft:white_bed"
+}

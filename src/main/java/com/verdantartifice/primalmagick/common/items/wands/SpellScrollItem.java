@@ -5,21 +5,17 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.common.spells.SpellManager;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 import com.verdantartifice.primalmagick.common.stats.StatsManager;
 import com.verdantartifice.primalmagick.common.stats.StatsPM;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -33,10 +29,10 @@ import net.minecraft.world.level.Level;
  * @author Daedalus4096
  */
 public class SpellScrollItem extends Item {
-    protected static final Component TOOLTIP = new TranslatableComponent("tooltip.primalmagick.spell_scroll").withStyle(ChatFormatting.ITALIC, ChatFormatting.GRAY);
+    protected static final Component TOOLTIP = Component.translatable("tooltip.primalmagick.spell_scroll").withStyle(ChatFormatting.ITALIC, ChatFormatting.GRAY);
     
     public SpellScrollItem() {
-        super(new Item.Properties().tab(PrimalMagick.ITEM_GROUP));
+        super(new Item.Properties());
     }
     
     @Nullable
@@ -58,8 +54,8 @@ public class SpellScrollItem extends Item {
     public Component getName(ItemStack stack) {
         // A scroll's name is determined by that of the spell it holds (e.g. "Scroll of Lightning Bolt")
         SpellPackage spell = this.getSpell(stack);
-        Component spellName = (spell == null) ? new TranslatableComponent("tooltip.primalmagick.none") : spell.getName();
-        return new TranslatableComponent(this.getDescriptionId(stack), spellName).withStyle(ChatFormatting.ITALIC);
+        Component spellName = (spell == null) ? Component.translatable("tooltip.primalmagick.none") : spell.getName();
+        return Component.translatable(this.getDescriptionId(stack), spellName).withStyle(ChatFormatting.ITALIC);
     }
     
     @Override
@@ -78,11 +74,6 @@ public class SpellScrollItem extends Item {
         } else {
             return spell.getRarity();
         }
-    }
-    
-    @Override
-    public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items) {
-        // Do nothing; don't include filled spell scrolls in the creative tab
     }
     
     @Override

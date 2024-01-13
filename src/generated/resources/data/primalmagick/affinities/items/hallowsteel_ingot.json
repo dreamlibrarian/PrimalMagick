@@ -1,0 +1,15 @@
+{
+  "type": "item",
+  "set": {
+    "blood": 11,
+    "earth": 6,
+    "hallowed": 37,
+    "infernal": 11,
+    "moon": 1,
+    "sea": 1,
+    "sky": 1,
+    "sun": 1,
+    "void": 11
+  },
+  "target": "primalmagick:hallowsteel_ingot"
+}

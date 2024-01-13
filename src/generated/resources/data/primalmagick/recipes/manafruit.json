@@ -1,0 +1,34 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "minecraft:apple"
+    },
+    {
+      "item": "minecraft:honey_bottle"
+    },
+    {
+      "item": "primalmagick:mana_salts"
+    }
+  ],
+  "instability": 1,
+  "mana": {
+    "sources": {
+      "earth": 5,
+      "moon": 5,
+      "sea": 5,
+      "sky": 5,
+      "sun": 5
+    }
+  },
+  "props": [
+    {
+      "tag": "primalmagick:ritual_candles"
+    }
+  ],
+  "research": "MANAFRUIT",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:manafruit"
+  }
+}

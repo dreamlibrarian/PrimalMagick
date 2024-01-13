@@ -1,10 +1,9 @@
 package com.verdantartifice.primalmagick.client.gui;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
-import com.verdantartifice.primalmagick.common.containers.WandInscriptionTableContainer;
+import com.verdantartifice.primalmagick.common.menus.WandInscriptionTableMenu;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -15,23 +14,21 @@ import net.minecraft.world.entity.player.Inventory;
  * 
  * @author Daedalus4096
  */
-public class WandInscriptionTableScreen extends AbstractContainerScreen<WandInscriptionTableContainer> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/wand_inscription_table.png");
+public class WandInscriptionTableScreen extends AbstractContainerScreen<WandInscriptionTableMenu> {
+    private static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/wand_inscription_table.png");
 
-    public WandInscriptionTableScreen(WandInscriptionTableContainer screenContainer, Inventory inv, Component titleIn) {
-        super(screenContainer, inv, titleIn);
+    public WandInscriptionTableScreen(WandInscriptionTableMenu screenMenu, Inventory inv, Component titleIn) {
+        super(screenMenu, inv, titleIn);
     }
 
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(matrixStack);
-        super.render(matrixStack, mouseX, mouseY, partialTicks);
-        this.renderTooltip(matrixStack, mouseX, mouseY);
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
     @Override
-    protected void renderBg(PoseStack matrixStack, float partialTicks, int mouseX, int mouseY) {
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        guiGraphics.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
     }
 }

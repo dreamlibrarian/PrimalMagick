@@ -24,6 +24,7 @@ hs_err_pid*
 /build/
 /bin/
 /run/
+/run-data/
 
 #################
 ## Eclipse
@@ -68,5 +69,5 @@ local.properties
 ## MC Generated Data
 #################
 
-/src/generated/
+/src/generated/resources/.cache/
 *.hprof

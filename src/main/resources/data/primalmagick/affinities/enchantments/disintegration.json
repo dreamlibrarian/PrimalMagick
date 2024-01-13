@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "primalmagick:disintegration",
-  "multiplier": {
-    "sky": 1
-  }
-}

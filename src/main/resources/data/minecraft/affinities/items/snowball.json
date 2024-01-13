@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:snowball",
-  "set": {
-    "sea": 2,
-    "sky": 2
-  }
-}

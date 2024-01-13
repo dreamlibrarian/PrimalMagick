@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:nautilus_shell",
-  "set": {
-    "sea": 10,
-    "blood": 2
-  }
-}

@@ -1,0 +1,45 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "primalmagick:mana_salts"
+    },
+    {
+      "item": "primalmagick:essence_crystal_sun"
+    },
+    {
+      "tag": "forge:ingots/iron"
+    },
+    {
+      "item": "primalmagick:rune_summon"
+    },
+    {
+      "item": "primalmagick:rune_creature"
+    },
+    {
+      "item": "primalmagick:rune_insight"
+    }
+  ],
+  "instability": 5,
+  "mana": {
+    "sources": {
+      "sun": 100
+    }
+  },
+  "props": [
+    {
+      "block": "primalmagick:incense_brazier"
+    },
+    {
+      "block": "primalmagick:ritual_bell"
+    },
+    {
+      "block": "primalmagick:soul_anvil"
+    }
+  ],
+  "research": "GRAND_PIXIES",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:pixie_grand_sun"
+  }
+}

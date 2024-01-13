@@ -1,19 +1,18 @@
 package com.verdantartifice.primalmagick.common.blocks.rituals;
 
 import java.awt.Color;
-import java.util.Random;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
-import com.verdantartifice.primalmagick.common.misc.DamageSourcesPM;
+import com.verdantartifice.primalmagick.common.damagesource.DamageSourcesPM;
 import com.verdantartifice.primalmagick.common.rituals.IRitualPropBlock;
 import com.verdantartifice.primalmagick.common.tiles.rituals.BloodletterTileEntity;
 import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -29,8 +28,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -43,10 +42,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class BloodletterBlock extends BaseEntityBlock implements IRitualPropBlock {
     public static final BooleanProperty FILLED = BooleanProperty.create("filled");
-    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/bloodletter"));
+    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(PrimalMagick.resource("block/bloodletter"));
     
     public BloodletterBlock() {
-        super(Block.Properties.of(Material.STONE, MaterialColor.PODZOL).strength(1.5F, 6.0F).sound(SoundType.STONE));
+        super(Block.Properties.of().mapColor(MapColor.PODZOL).instrument(NoteBlockInstrument.BASEDRUM).strength(1.5F, 6.0F).sound(SoundType.STONE));
         this.registerDefaultState(this.defaultBlockState().setValue(FILLED, Boolean.FALSE));
     }
     
@@ -70,7 +69,7 @@ public class BloodletterBlock extends BaseEntityBlock implements IRitualPropBloc
         if (player != null && player.getItemInHand(handIn).isEmpty() && !state.getValue(FILLED)) {
             // If using an empty hand on an unfilled bloodletter, cut the player
             if (!worldIn.isClientSide) {
-                player.hurt(DamageSourcesPM.BLEEDING, 2.0F);
+                player.hurt(DamageSourcesPM.bleeding(worldIn), 2.0F);
                 worldIn.setBlock(pos, state.setValue(FILLED, Boolean.TRUE), Block.UPDATE_ALL_IMMEDIATE);
                 
                 // If this block is awaiting activation for an altar, notify it
@@ -105,7 +104,7 @@ public class BloodletterBlock extends BaseEntityBlock implements IRitualPropBloc
     }
     
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show spell sparkles if receiving salt power
         if (this.isBlockSaltPowered(worldIn, pos)) {
             FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Color.WHITE.getRGB());
@@ -124,16 +123,12 @@ public class BloodletterBlock extends BaseEntityBlock implements IRitualPropBloc
 
     @Override
     public boolean isPropActivated(BlockState state, Level world, BlockPos pos) {
-        if (state != null && state.getBlock() instanceof BloodletterBlock) {
-            return state.getValue(FILLED);
-        } else {
-            return false;
-        }
+        return state != null && state.hasProperty(FILLED) && state.getValue(FILLED);
     }
 
     @Override
     public String getPropTranslationKey() {
-        return "primalmagick.ritual.prop.bloodletter";
+        return "ritual.primalmagick.prop.bloodletter";
     }
 
     public float getUsageStabilityBonus() {

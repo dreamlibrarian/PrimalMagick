@@ -3,7 +3,6 @@ package com.verdantartifice.primalmagick.client.fx;
 import java.awt.Color;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 import com.verdantartifice.primalmagick.client.fx.particles.ParticleTypesPM;
 import com.verdantartifice.primalmagick.client.fx.particles.PotionExplosionParticleData;
@@ -18,6 +17,7 @@ import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
@@ -28,6 +28,7 @@ import net.minecraft.world.level.Level;
  */
 public class FxDispatcher {
     public static final FxDispatcher INSTANCE = new FxDispatcher();
+    public static final int DEFAULT_PROP_MARKER_LIFETIME = 6000;
     
     protected static final Map<BlockPos, Particle> PROP_MARKER_PARTICLES = new HashMap<>();
     
@@ -48,7 +49,7 @@ public class FxDispatcher {
         // Release a cluster of poof clouds when transforming a block with a wand
         Minecraft mc = Minecraft.getInstance();
         Level world = this.getWorld();
-        Random rng = world.random;
+        RandomSource rng = world.random;
         if (sound) {
             this.getWorld().playLocalSound(x, y, z, SoundsPM.POOF.get(), SoundSource.BLOCKS, 1.0F, 1.0F + (float)rng.nextGaussian() * 0.05F, false);
         }
@@ -118,7 +119,7 @@ public class FxDispatcher {
         // Show a cluster of particles at the impact point of a spell
         Minecraft mc = Minecraft.getInstance();
         Level world = this.getWorld();
-        Random rng = world.random;
+        RandomSource rng = world.random;
         int count = (15 + rng.nextInt(11)) * radius;
         for (int index = 0; index < count; index++) {
             double dx = (rng.nextFloat() * 0.035D * radius) * (rng.nextBoolean() ? 1 : -1);
@@ -134,7 +135,7 @@ public class FxDispatcher {
     public void ritualGlow(BlockPos pos, int color) {
         Minecraft mc = Minecraft.getInstance();
         Level world = this.getWorld();
-        Random rng = world.random;
+        RandomSource rng = world.random;
 
         Color c = new Color(color);
         float r = c.getRed() / 255.0F;
@@ -144,6 +145,31 @@ public class FxDispatcher {
         int count = (10 + rng.nextInt(6));
         for (int index = 0; index < count; index++) {
             Particle p = mc.particleEngine.createParticle(ParticleTypesPM.SPELL_SPARKLE.get(), pos.getX() + rng.nextDouble(), pos.getY() + 1.0D, pos.getZ() + rng.nextDouble(), 0.0D, 0.075D, 0.0D);
+            if (p != null) {
+                p.setColor(r, g, b);
+            }
+        }
+    }
+    
+    public void spellcraftingGlow(BlockPos pos, int color) {
+        Color c = new Color(color);
+        float r = c.getRed() / 255.0F;
+        float g = c.getGreen() / 255.0F;
+        float b = c.getBlue() / 255.0F;
+        this.spellcraftingGlow(pos, r, g, b);
+    }
+    
+    public void spellcraftingGlow(BlockPos pos, float r, float g, float b) {
+        Minecraft mc = Minecraft.getInstance();
+        Level world = this.getWorld();
+        RandomSource rng = world.random;
+
+        int count = (3 + rng.nextInt(3));
+        for (int index = 0; index < count; index++) {
+            double x = pos.getX() + 0.40625D + (rng.nextDouble() * 0.1875D);
+            double y = pos.getY() + 1.125D;
+            double z = pos.getZ() + 0.40625D + (rng.nextDouble() * 0.1875D);
+            Particle p = mc.particleEngine.createParticle(ParticleTypesPM.SPELL_SPARKLE.get(), x, y, z, 0.0D, 0.0375D, 0.0D);
             if (p != null) {
                 p.setColor(r, g, b);
             }
@@ -182,9 +208,14 @@ public class FxDispatcher {
     }
     
     public void propMarker(BlockPos pos) {
+        this.propMarker(pos, DEFAULT_PROP_MARKER_LIFETIME);
+    }
+    
+    public void propMarker(BlockPos pos, int lifetimeTicks) {
         // Show a marker above a ritual prop's position and save it for later manual canceling
         Minecraft mc = Minecraft.getInstance();
         Particle p = mc.particleEngine.createParticle(ParticleTypesPM.PROP_MARKER.get(), pos.getX() + 0.5D, pos.getY() + 1.5D, pos.getZ() + 0.5D, 0.0D, 0.0D, 0.0D);
+        p.setLifetime(lifetimeTicks);
         this.removePropMarker(pos);
         PROP_MARKER_PARTICLES.put(pos, p);
     }
@@ -262,5 +293,74 @@ public class FxDispatcher {
         if (p != null) {
             p.setColor(r, g, b);
         }
+    }
+    
+    public void spellcraftingRuneU(double x, double y, double z, double dx, double dy, double dz, int color) {
+        Color c = new Color(color);
+        float r = c.getRed() / 255.0F;
+        float g = c.getGreen() / 255.0F;
+        float b = c.getBlue() / 255.0F;
+        this.spellcraftingRuneU(x, y, z, dx, dy, dz, r, g, b);
+    }
+    
+    public void spellcraftingRuneU(double x, double y, double z, double dx, double dy, double dz, float r, float g, float b) {
+        Minecraft mc = Minecraft.getInstance();
+        Particle p = mc.particleEngine.createParticle(ParticleTypesPM.SPELLCRAFTING_RUNE_U.get(), x, y, z, dx, dy, dz);
+        if (p != null) {
+            p.setColor(r, g, b);
+        }
+    }
+    
+    public void spellcraftingRuneV(double x, double y, double z, double dx, double dy, double dz, int color) {
+        Color c = new Color(color);
+        float r = c.getRed() / 255.0F;
+        float g = c.getGreen() / 255.0F;
+        float b = c.getBlue() / 255.0F;
+        this.spellcraftingRuneV(x, y, z, dx, dy, dz, r, g, b);
+    }
+    
+    public void spellcraftingRuneV(double x, double y, double z, double dx, double dy, double dz, float r, float g, float b) {
+        Minecraft mc = Minecraft.getInstance();
+        Particle p = mc.particleEngine.createParticle(ParticleTypesPM.SPELLCRAFTING_RUNE_V.get(), x, y, z, dx, dy, dz);
+        if (p != null) {
+            p.setColor(r, g, b);
+        }
+    }
+    
+    public void spellcraftingRuneT(double x, double y, double z, double dx, double dy, double dz, int color) {
+        Color c = new Color(color);
+        float r = c.getRed() / 255.0F;
+        float g = c.getGreen() / 255.0F;
+        float b = c.getBlue() / 255.0F;
+        this.spellcraftingRuneT(x, y, z, dx, dy, dz, r, g, b);
+    }
+    
+    public void spellcraftingRuneT(double x, double y, double z, double dx, double dy, double dz, float r, float g, float b) {
+        Minecraft mc = Minecraft.getInstance();
+        Particle p = mc.particleEngine.createParticle(ParticleTypesPM.SPELLCRAFTING_RUNE_T.get(), x, y, z, dx, dy, dz);
+        if (p != null) {
+            p.setColor(r, g, b);
+        }
+    }
+    
+    public void spellcraftingRuneD(double x, double y, double z, double dx, double dy, double dz, int color) {
+        Color c = new Color(color);
+        float r = c.getRed() / 255.0F;
+        float g = c.getGreen() / 255.0F;
+        float b = c.getBlue() / 255.0F;
+        this.spellcraftingRuneD(x, y, z, dx, dy, dz, r, g, b);
+    }
+    
+    public void spellcraftingRuneD(double x, double y, double z, double dx, double dy, double dz, float r, float g, float b) {
+        Minecraft mc = Minecraft.getInstance();
+        Particle p = mc.particleEngine.createParticle(ParticleTypesPM.SPELLCRAFTING_RUNE_D.get(), x, y, z, dx, dy, dz);
+        if (p != null) {
+            p.setColor(r, g, b);
+        }
+    }
+    
+    public void bloodDrop(double x, double y, double z) {
+        Minecraft mc = Minecraft.getInstance();
+        mc.particleEngine.createParticle(ParticleTypesPM.DRIPPING_BLOOD_DROP.get(), x, y, z, 0, 0, 0);
     }
 }

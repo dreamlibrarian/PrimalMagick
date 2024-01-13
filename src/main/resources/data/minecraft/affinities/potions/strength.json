@@ -1,7 +1,0 @@
-{
-  "type": "potion_bonus",
-  "target": "minecraft:strength",
-  "bonus": {
-    "earth": 2
-  }
-}

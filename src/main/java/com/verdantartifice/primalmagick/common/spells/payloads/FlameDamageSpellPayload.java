@@ -3,18 +3,15 @@ package com.verdantartifice.primalmagick.common.spells.payloads;
 import java.util.Map;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 import com.verdantartifice.primalmagick.common.spells.SpellProperty;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -30,7 +27,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class FlameDamageSpellPayload extends AbstractDamageSpellPayload {
     public static final String TYPE = "flame_damage";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_PAYLOAD_FLAME"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_PAYLOAD_FLAME.get().compoundKey();
 
     public FlameDamageSpellPayload() {
         super();
@@ -48,7 +45,7 @@ public class FlameDamageSpellPayload extends AbstractDamageSpellPayload {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("duration", new SpellProperty("duration", "primalmagick.spell.property.duration", 0, 5));
+        propMap.put("duration", new SpellProperty("duration", "spells.primalmagick.property.duration", 0, 5));
         return propMap;
     }
 
@@ -62,11 +59,6 @@ public class FlameDamageSpellPayload extends AbstractDamageSpellPayload {
         world.playSound(null, origin, SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 1.0F, 1.0F + (float)(world.random.nextGaussian() * 0.05D));
     }
     
-    @Override
-    protected DamageSource getDamageSource(LivingEntity source, SpellPackage spell, Entity projectileEntity) {
-        return super.getDamageSource(source, spell, projectileEntity).setIsFire();
-    }
-
     @Override
     protected String getPayloadType() {
         return TYPE;
@@ -97,7 +89,7 @@ public class FlameDamageSpellPayload extends AbstractDamageSpellPayload {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.payload.detail_tooltip." + this.getPayloadType(), DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)),
+        return Component.translatable("spells.primalmagick.payload." + this.getPayloadType() + ".detail_tooltip", DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)),
                 DECIMAL_FORMATTER.format(this.getDurationSeconds(spell, spellSource)));
     }
 }

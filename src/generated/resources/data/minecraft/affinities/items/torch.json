@@ -1,0 +1,8 @@
+{
+  "type": "item",
+  "set": {
+    "earth": 2,
+    "sun": 10
+  },
+  "target": "minecraft:torch"
+}

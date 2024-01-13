@@ -1,12 +1,12 @@
 package com.verdantartifice.primalmagick.client.renderers.tile;
 
 import java.awt.Color;
-import java.util.Random;
+
+import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.tiles.devices.SanguineCrucibleTileEntity;
@@ -21,6 +21,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 
 /**
@@ -45,7 +46,7 @@ public class SanguineCrucibleTER implements BlockEntityRenderer<SanguineCrucible
         
         matrixStackIn.pushPose();
         matrixStackIn.translate(0.0D, tileEntityIn.getFluidHeight(), 0.0D);
-        matrixStackIn.mulPose(Vector3f.XP.rotationDegrees(90.0F));
+        matrixStackIn.mulPose(Axis.XP.rotationDegrees(90.0F));
         
         @SuppressWarnings("deprecation")
         TextureAtlasSprite sprite = mc.getModelManager().getAtlas(TextureAtlas.LOCATION_BLOCKS).getSprite(WATER_TEXTURE);
@@ -59,7 +60,7 @@ public class SanguineCrucibleTER implements BlockEntityRenderer<SanguineCrucible
         matrixStackIn.popPose();
         
         Level world = tileEntityIn.getLevel();
-        Random rand = world.random;
+        RandomSource rand = world.random;
         BlockPos pos = tileEntityIn.getBlockPos();
         if (tileEntityIn.showBubble(rand)) {
             double x = (double)pos.getX() + 0.2D + (rand.nextDouble() * 0.6D);

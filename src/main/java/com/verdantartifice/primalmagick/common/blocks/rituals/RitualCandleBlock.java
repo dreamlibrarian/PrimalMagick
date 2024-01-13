@@ -1,7 +1,10 @@
 package com.verdantartifice.primalmagick.common.blocks.rituals;
 
 import java.awt.Color;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
@@ -11,9 +14,9 @@ import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -29,7 +32,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -43,7 +45,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class RitualCandleBlock extends BaseEntityBlock implements IRitualPropBlock {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
-    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/ritual_candle"));
+    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(PrimalMagick.resource("block/ritual_candle"));
+    
+    protected static final List<RitualCandleBlock> REGISTRY = new ArrayList<>();
 
     protected final DyeColor color;
     
@@ -51,6 +55,7 @@ public class RitualCandleBlock extends BaseEntityBlock implements IRitualPropBlo
         super(properties);
         this.color = colorIn;
         this.registerDefaultState(this.defaultBlockState().setValue(LIT, Boolean.FALSE));
+        REGISTRY.add(this);
     }
     
     public DyeColor getColor() {
@@ -74,7 +79,7 @@ public class RitualCandleBlock extends BaseEntityBlock implements IRitualPropBlo
     }
     
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show flame particles if lit
         if (stateIn.getValue(LIT)) {
             double x = pos.getX() + 0.5D;
@@ -94,15 +99,10 @@ public class RitualCandleBlock extends BaseEntityBlock implements IRitualPropBlo
     }
     
     @Override
-    public PushReaction getPistonPushReaction(BlockState state) {
-        return PushReaction.DESTROY;
-    }
-    
-    @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         if (player != null && player.getItemInHand(handIn).getItem() instanceof FlintAndSteelItem && !state.getValue(LIT)) {
             // If using a flint-and-steel on an unlit candle, light it
-            worldIn.playSound(player, pos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, 0.8F + (RANDOM.nextFloat() * 0.4F));
+            worldIn.playSound(player, pos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, 0.8F + (worldIn.random.nextFloat() * 0.4F));
             if (!worldIn.isClientSide) {
                 worldIn.setBlock(pos, state.setValue(LIT, Boolean.TRUE), Block.UPDATE_ALL_IMMEDIATE);
                 player.getItemInHand(handIn).hurtAndBreak(1, player, (p) -> {
@@ -144,16 +144,12 @@ public class RitualCandleBlock extends BaseEntityBlock implements IRitualPropBlo
     
     @Override
     public boolean isPropActivated(BlockState state, Level world, BlockPos pos) {
-        if (state != null && state.getBlock() instanceof RitualCandleBlock) {
-            return state.getValue(LIT);
-        } else {
-            return false;
-        }
+        return state != null && state.hasProperty(LIT) && state.getValue(LIT);
     }
     
     @Override
     public String getPropTranslationKey() {
-        return "primalmagick.ritual.prop.ritual_candle";
+        return "ritual.primalmagick.prop.ritual_candle";
     }
     
     public float getUsageStabilityBonus() {
@@ -168,5 +164,9 @@ public class RitualCandleBlock extends BaseEntityBlock implements IRitualPropBlo
     @Override
     public float getSymmetryPenalty(Level world, BlockPos pos) {
         return 0.01F;
+    }
+    
+    public static Collection<RitualCandleBlock> getAllCandles() {
+        return Collections.unmodifiableList(REGISTRY);
     }
 }

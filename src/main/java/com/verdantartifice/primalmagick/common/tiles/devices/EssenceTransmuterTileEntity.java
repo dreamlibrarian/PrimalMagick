@@ -3,7 +3,7 @@ package com.verdantartifice.primalmagick.common.tiles.devices;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -14,32 +14,34 @@ import javax.annotation.Nullable;
 
 import com.verdantartifice.primalmagick.common.capabilities.IManaStorage;
 import com.verdantartifice.primalmagick.common.capabilities.ITileResearchCache;
+import com.verdantartifice.primalmagick.common.capabilities.ItemStackHandlerPM;
 import com.verdantartifice.primalmagick.common.capabilities.ManaStorage;
 import com.verdantartifice.primalmagick.common.capabilities.PrimalMagickCapabilities;
 import com.verdantartifice.primalmagick.common.capabilities.TileResearchCache;
-import com.verdantartifice.primalmagick.common.containers.EssenceTransmuterContainer;
 import com.verdantartifice.primalmagick.common.items.essence.EssenceItem;
 import com.verdantartifice.primalmagick.common.items.essence.EssenceType;
+import com.verdantartifice.primalmagick.common.menus.EssenceTransmuterMenu;
 import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
 import com.verdantartifice.primalmagick.common.sources.IManaContainer;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 import com.verdantartifice.primalmagick.common.tags.ItemTagsPM;
 import com.verdantartifice.primalmagick.common.tiles.TileEntityTypesPM;
+import com.verdantartifice.primalmagick.common.tiles.base.AbstractTileSidedInventoryPM;
 import com.verdantartifice.primalmagick.common.tiles.base.IOwnedTileEntity;
-import com.verdantartifice.primalmagick.common.tiles.base.TileInventoryPM;
 import com.verdantartifice.primalmagick.common.util.ItemUtils;
 import com.verdantartifice.primalmagick.common.util.WeightedRandomBag;
 import com.verdantartifice.primalmagick.common.wands.IWand;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -50,6 +52,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.ItemStackHandler;
 
 /**
  * Definition of an essence transmuter tile entity.  Performs the processing for the corresponding block.
@@ -57,10 +60,10 @@ import net.minecraftforge.common.util.LazyOptional;
  * @author Daedalus4096
  * @see {@link com.verdantartifice.primalmagick.common.blocks.devices.EssenceTransmuterBlock}
  */
-public class EssenceTransmuterTileEntity extends TileInventoryPM implements MenuProvider, IManaContainer, IOwnedTileEntity {
-    protected static final int[] SLOTS_FOR_UP = new int[] { 0 };
-    protected static final int[] SLOTS_FOR_DOWN = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    protected static final int[] SLOTS_FOR_SIDES = new int[] { 10 };
+public class EssenceTransmuterTileEntity extends AbstractTileSidedInventoryPM implements MenuProvider, IManaContainer, IOwnedTileEntity {
+    protected static final int INPUT_INV_INDEX = 0;
+    protected static final int OUTPUT_INV_INDEX = 1;
+    protected static final int WAND_INV_INDEX = 2;
     protected static final int ESSENCE_PER_TRANSMUTE = 8;
     protected static final int OUTPUT_CAPACITY = 9;
     
@@ -115,7 +118,7 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
     };
     
     public EssenceTransmuterTileEntity(BlockPos pos, BlockState state) {
-        super(TileEntityTypesPM.ESSENCE_TRANSMUTER.get(), pos, state, 11);
+        super(TileEntityTypesPM.ESSENCE_TRANSMUTER.get(), pos, state);
         this.manaStorage = new ManaStorage(10000, 100, 100, Source.MOON);
         this.researchCache = new TileResearchCache();
     }
@@ -155,16 +158,16 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
 
     @Override
     public AbstractContainerMenu createMenu(int windowId, Inventory playerInv, Player player) {
-        return new EssenceTransmuterContainer(windowId, playerInv, this, this.transmuterData);
+        return new EssenceTransmuterMenu(windowId, playerInv, this.getBlockPos(), this, this.transmuterData);
     }
 
     @Override
     public Component getDisplayName() {
-        return new TranslatableComponent(this.getBlockState().getBlock().getDescriptionId());
+        return Component.translatable(this.getBlockState().getBlock().getDescriptionId());
     }
     
     protected int getProcessTimeTotal() {
-        return 200;
+        return 100;
     }
     
     protected int getManaCost() {
@@ -177,6 +180,7 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
         if (!this.level.isClientSide) {
             this.relevantResearch = assembleRelevantResearch();
         }
+        this.processTimeTotal = this.getProcessTimeTotal();
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, EssenceTransmuterTileEntity entity) {
@@ -184,7 +188,7 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
 
         if (!level.isClientSide) {
             // Fill up internal mana storage with that from any inserted wands
-            ItemStack wandStack = entity.items.get(10);
+            ItemStack wandStack = entity.getItem(WAND_INV_INDEX, 0);
             if (!wandStack.isEmpty() && wandStack.getItem() instanceof IWand wand) {
                 int centimanaMissing = entity.manaStorage.getMaxManaStored(Source.MOON) - entity.manaStorage.getManaStored(Source.MOON);
                 int centimanaToTransfer = Mth.clamp(centimanaMissing, 0, 100);
@@ -195,7 +199,7 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
             }
             
             // Process ingredients
-            ItemStack essenceStack = entity.items.get(0);
+            ItemStack essenceStack = entity.getItem(INPUT_INV_INDEX, 0);
             if (!essenceStack.isEmpty() && entity.manaStorage.getManaStored(Source.MOON) >= entity.getManaCost()) {
                 // If transmutable input is in place, process it
                 if (entity.canTransmute(essenceStack)) {
@@ -222,7 +226,7 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
     }
     
     @Nonnull
-    protected Source getNextSource(Source inputSource, Random rng) {
+    protected Source getNextSource(Source inputSource, RandomSource rng) {
         if (this.nextOutputSource == null || this.nextOutputSource.equals(inputSource)) {
             // Generate a new random, known source different from the input
             WeightedRandomBag<Source> bag = new WeightedRandomBag<>();
@@ -247,7 +251,7 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
             // Merge the items already in the output inventory with the new output items from the transmutation
             for (int index = 0; index < Math.min(newOutputs.size(), OUTPUT_CAPACITY); index++) {
                 ItemStack out = newOutputs.get(index);
-                this.items.set(index + 1, (out == null ? ItemStack.EMPTY : out));
+                this.setItem(OUTPUT_INV_INDEX, index, (out == null ? ItemStack.EMPTY : out));
             }
             
             // Deduct the inputs
@@ -263,7 +267,7 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
             Source inputSource = essence.getSource();
             Source outputSource = this.getNextSource(inputSource, this.level.random);
             ItemStack outputItem = EssenceItem.getEssence(inputType, outputSource, 1);
-            List<ItemStack> currentOutputs = this.items.subList(1, 1 + OUTPUT_CAPACITY);
+            List<ItemStack> currentOutputs = this.inventories.get(OUTPUT_INV_INDEX);
             List<ItemStack> mergedOutputs = ItemUtils.mergeItemStackIntoList(currentOutputs, outputItem);
             return mergedOutputs;
         } else {
@@ -272,10 +276,10 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
     }
 
     @Override
-    public void setItem(int index, ItemStack stack) {
-        ItemStack slotStack = this.items.get(index);
-        super.setItem(index, stack);
-        if (index == 0 && (stack.isEmpty() || !stack.sameItem(slotStack) || !ItemStack.tagMatches(stack, slotStack))) {
+    public void setItem(int invIndex, int slotIndex, ItemStack stack) {
+        ItemStack slotStack = this.getItem(invIndex, slotIndex);
+        super.setItem(invIndex, slotIndex, stack);
+        if (invIndex == INPUT_INV_INDEX && (stack.isEmpty() || !ItemStack.isSameItemSameTags(stack, slotStack))) {
             this.processTimeTotal = this.getProcessTimeTotal();
             this.processTime = 0;
             this.nextOutputSource = null;
@@ -308,14 +312,14 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
 
     @Override
     public SourceList getAllMana() {
-        SourceList mana = new SourceList();
+        SourceList.Builder mana = SourceList.builder();
         for (Source source : Source.SORTED_SOURCES) {
             int amount = this.manaStorage.getManaStored(source);
             if (amount > 0) {
-                mana.add(source, amount);
+                mana.with(source, amount);
             }
         }
-        return mana;
+        return mana.build();
     }
 
     @Override
@@ -336,38 +340,6 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
         this.manaStorage.setMana(mana);
         this.setChanged();
         this.syncTile(true);
-    }
-
-    @Override
-    public boolean canPlaceItem(int slotIndex, ItemStack stack) {
-        if (slotIndex == 10) {
-            return stack.getItem() instanceof IWand;
-        } else if (slotIndex == 0) {
-            return stack.is(ItemTagsPM.ESSENCES);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int[] getSlotsForFace(Direction side) {
-        if (side == Direction.UP) {
-            return SLOTS_FOR_UP;
-        } else if (side == Direction.DOWN) {
-            return SLOTS_FOR_DOWN;
-        } else {
-            return SLOTS_FOR_SIDES;
-        }
-    }
-
-    @Override
-    public boolean canPlaceItemThroughFace(int index, ItemStack itemStackIn, Direction direction) {
-        return this.canPlaceItem(index, itemStackIn);
-    }
-
-    @Override
-    public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) {
-        return true;
     }
 
     @Override
@@ -415,5 +387,73 @@ public class EssenceTransmuterTileEntity extends TileInventoryPM implements Menu
     
     protected static Set<SimpleResearchKey> assembleRelevantResearch() {
         return Source.SORTED_SOURCES.stream().map(s -> s.getDiscoverKey()).filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
+    protected int getInventoryCount() {
+        return 3;
+    }
+
+    @Override
+    protected int getInventorySize(int inventoryIndex) {
+        return switch (inventoryIndex) {
+            case INPUT_INV_INDEX, WAND_INV_INDEX -> 1;
+            case OUTPUT_INV_INDEX -> OUTPUT_CAPACITY;
+            default -> 0;
+        };
+    }
+
+    @Override
+    protected OptionalInt getInventoryIndexForFace(Direction face) {
+        return switch (face) {
+            case UP -> OptionalInt.of(INPUT_INV_INDEX);
+            case DOWN -> OptionalInt.of(OUTPUT_INV_INDEX);
+            default -> OptionalInt.of(WAND_INV_INDEX);
+        };
+    }
+
+    @Override
+    protected NonNullList<ItemStackHandler> createHandlers() {
+        NonNullList<ItemStackHandler> retVal = NonNullList.withSize(this.getInventoryCount(), new ItemStackHandlerPM(this));
+        
+        // Create input handler
+        retVal.set(INPUT_INV_INDEX, new ItemStackHandlerPM(this.inventories.get(INPUT_INV_INDEX), this) {
+            @Override
+            public boolean isItemValid(int slot, ItemStack stack) {
+                return stack.is(ItemTagsPM.ESSENCES);
+            }
+        });
+        
+        // Create fuel handler
+        retVal.set(WAND_INV_INDEX, new ItemStackHandlerPM(this.inventories.get(WAND_INV_INDEX), this) {
+            @Override
+            public boolean isItemValid(int slot, ItemStack stack) {
+                return stack.getItem() instanceof IWand;
+            }
+        });
+
+        // Create output handler
+        retVal.set(OUTPUT_INV_INDEX, new ItemStackHandlerPM(this.inventories.get(OUTPUT_INV_INDEX), this) {
+            @Override
+            public boolean isItemValid(int slot, ItemStack stack) {
+                return false;
+            }
+        });
+        
+        return retVal;
+    }
+
+    @Override
+    protected void loadLegacyItems(NonNullList<ItemStack> legacyItems) {
+        // Slot 0 was the input item stack
+        this.setItem(INPUT_INV_INDEX, 0, legacyItems.get(0));
+        
+        // Slots 1-9 were the output item stacks
+        for (int inputIndex = 0; inputIndex < OUTPUT_CAPACITY; inputIndex++) {
+            this.setItem(OUTPUT_INV_INDEX, inputIndex, legacyItems.get(inputIndex + 1));
+        }
+        
+        // Slot 10 was the wand item stack
+        this.setItem(WAND_INV_INDEX, 0, legacyItems.get(OUTPUT_CAPACITY + 1));
     }
 }

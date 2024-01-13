@@ -2,10 +2,14 @@ package com.verdantartifice.primalmagick.client.util;
 
 import javax.annotation.Nullable;
 
+import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
+import com.verdantartifice.primalmagick.client.gui.StaticBookViewScreen;
 import com.verdantartifice.primalmagick.client.gui.recipe_book.ArcaneRecipeUpdateListener;
+import com.verdantartifice.primalmagick.common.books.BookType;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -73,5 +77,27 @@ public class ClientUtils {
                 }
             });
         }
+    }
+
+    /**
+     * Opens the grimoire GUI on the client.
+     * 
+     * ONLY CALL THIS METHOD AFTER CHECKING YOUR CURRENT FMLENVIRONMENT DIST.
+     */
+    public static void openGrimoireScreen() {
+        Minecraft mc = Minecraft.getInstance();
+        mc.setScreen(new GrimoireScreen());
+    }
+    
+    /**
+     * Opens the static book GUI on the client for the given book ID.
+     * 
+     * ONLY CALL THIS METHOD AFTER CHECKING YOUR CURRENT FMLENVIRONMENT DIST.
+     * 
+     * @param bookId the ID of the static book whose resources to load
+     */
+    public static void openStaticBookScreen(ResourceKey<?> bookKey, ResourceLocation languageId, int translatedComprehension, BookType bookType) {
+        Minecraft mc = Minecraft.getInstance();
+        mc.setScreen(new StaticBookViewScreen(bookKey, languageId, translatedComprehension, bookType));
     }
 }

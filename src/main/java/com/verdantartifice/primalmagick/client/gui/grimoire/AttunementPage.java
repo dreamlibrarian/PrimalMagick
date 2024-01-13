@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.gui.GrimoireScreen;
 import com.verdantartifice.primalmagick.client.gui.widgets.grimoire.AttunementMeterWidget;
@@ -16,6 +15,8 @@ import com.verdantartifice.primalmagick.client.gui.widgets.grimoire.AttunementTh
 import com.verdantartifice.primalmagick.common.attunements.AttunementThreshold;
 import com.verdantartifice.primalmagick.common.sources.Source;
 
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -24,7 +25,7 @@ import net.minecraft.resources.ResourceLocation;
  * @author Daedalus4096
  */
 public class AttunementPage extends AbstractPage {
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/attunement_meter.png");
+    private static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/attunement_meter.png");
 
     protected Source source;
     protected List<IPageElement> contents = new ArrayList<>();
@@ -53,10 +54,10 @@ public class AttunementPage extends AbstractPage {
     }
 
     @Override
-    public void render(PoseStack matrixStack, int side, int x, int y, int mouseX, int mouseY) {
+    public void render(GuiGraphics guiGraphics, int side, int x, int y, int mouseX, int mouseY) {
         // Draw title page if applicable
         if (this.isFirstPage() && side == 0) {
-            this.renderTitle(matrixStack, side, x, y, mouseX, mouseY, null);
+            this.renderTitle(guiGraphics, side, x, y, mouseX, mouseY, null);
             y += 53;
         } else {
             y += 25;
@@ -66,22 +67,21 @@ public class AttunementPage extends AbstractPage {
             // Render attunement meter
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            RenderSystem.setShaderTexture(0, TEXTURE);
             
             // Render meter background
-            this.blit(matrixStack, x + 51 + (side * 140), y, 12, 0, 16, 120);
+            guiGraphics.blit(TEXTURE, x + 51 + (side * 140), y, 12, 0, 16, 120);
         }
 
         // Render page contents
         for (IPageElement content : this.contents) {
-            content.render(matrixStack, side, x, y);
+            content.render(guiGraphics, side, x, y);
             y = content.getNextY(y);
         }
     }
 
     @Override
-    protected String getTitleTranslationKey() {
-        return this.source.getNameTranslationKey();
+    protected Component getTitleText() {
+        return Component.translatable(this.source.getNameTranslationKey());
     }
 
     @Override

@@ -5,6 +5,7 @@ import java.util.List;
 import com.verdantartifice.primalmagick.common.blocks.mana.AncientManaFontBlock;
 import com.verdantartifice.primalmagick.common.items.ItemsPM;
 import com.verdantartifice.primalmagick.common.research.ResearchManager;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
 import com.verdantartifice.primalmagick.common.stats.StatsManager;
 import com.verdantartifice.primalmagick.common.tiles.TileEntityTypesPM;
@@ -12,9 +13,8 @@ import com.verdantartifice.primalmagick.common.util.EntityUtils;
 import com.verdantartifice.primalmagick.common.util.InventoryUtils;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -32,30 +32,29 @@ public class AncientManaFontTileEntity extends AbstractManaFontTileEntity {
         super(TileEntityTypesPM.ANCIENT_MANA_FONT.get(), pos, state);
     }
     
+    @Override
+    protected int getInitialMana() {
+        return this.getManaCapacity();
+    }
+
     public static void tick(Level level, BlockPos pos, BlockState state, AncientManaFontTileEntity entity) {
-        if (!level.isClientSide && entity.ticksExisted == 0) {
-            // TODO Move this code to onLoad once Forge is fixed to call it again
-            entity.mana = entity.getManaCapacity();
-            entity.setChanged();
-            entity.syncTile(true);
-        }
         entity.ticksExisted++;
         if (!level.isClientSide && entity.ticksExisted % 10 == 0) {
             // Have players in range discover this font's shrine
-            SimpleResearchKey shrineResearch = SimpleResearchKey.parse("m_found_shrine");
-            SimpleResearchKey siphonResearch = SimpleResearchKey.parse("m_siphon_prompt");
+            SimpleResearchKey shrineResearch = ResearchNames.INTERNAL_FOUND_SHRINE.get().simpleKey();
+            SimpleResearchKey siphonResearch = ResearchNames.INTERNAL_SIPHON_PROMPT.get().simpleKey();
             List<Player> players = EntityUtils.getEntitiesInRange(level, pos, null, Player.class, 5.0D);
             for (Player player : players) {
                 if (!ResearchManager.isResearchComplete(player, shrineResearch) && !ResearchManager.isResearchComplete(player, SimpleResearchKey.FIRST_STEPS)) {
                     ResearchManager.completeResearch(player, shrineResearch);
-                    player.sendMessage(new TranslatableComponent("event.primalmagick.found_shrine").withStyle(ChatFormatting.GREEN), Util.NIL_UUID);
+                    player.sendSystemMessage(Component.translatable("event.primalmagick.found_shrine").withStyle(ChatFormatting.GREEN));
                 }
                 if (!ResearchManager.isResearchComplete(player, siphonResearch) && InventoryUtils.isPlayerCarrying(player, new ItemStack(ItemsPM.MUNDANE_WAND.get()))) {
                     ResearchManager.completeResearch(player, siphonResearch);
-                    player.sendMessage(new TranslatableComponent("event.primalmagick.siphon_prompt").withStyle(ChatFormatting.GREEN), Util.NIL_UUID);
+                    player.sendSystemMessage(Component.translatable("event.primalmagick.siphon_prompt").withStyle(ChatFormatting.GREEN));
                 }
-                if (state.getBlock() instanceof AncientManaFontBlock) {
-                    StatsManager.discoverShrine(player, ((AncientManaFontBlock)state.getBlock()).getSource(), pos);
+                if (state.getBlock() instanceof AncientManaFontBlock fontBlock) {
+                    StatsManager.discoverShrine(player, fontBlock.getSource(), pos);
                 }
             }
         }

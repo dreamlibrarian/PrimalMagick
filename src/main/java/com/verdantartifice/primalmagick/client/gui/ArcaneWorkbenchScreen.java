@@ -7,43 +7,41 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.gui.recipe_book.ArcaneRecipeBookComponent;
 import com.verdantartifice.primalmagick.client.gui.recipe_book.ArcaneRecipeUpdateListener;
 import com.verdantartifice.primalmagick.client.gui.widgets.ManaCostWidget;
-import com.verdantartifice.primalmagick.common.containers.ArcaneWorkbenchContainer;
 import com.verdantartifice.primalmagick.common.crafting.IArcaneRecipe;
+import com.verdantartifice.primalmagick.common.menus.ArcaneWorkbenchMenu;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 /**
  * GUI screen for arcane workbench block.
  * 
  * @author Daedalus4096
  */
-public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkbenchContainer> implements ArcaneRecipeUpdateListener {
+public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkbenchMenu> implements ArcaneRecipeUpdateListener {
     protected static final Logger LOGGER = LogManager.getLogger();
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/arcane_workbench.png");
-    private static final ResourceLocation RECIPE_BUTTON_LOCATION = new ResourceLocation("textures/gui/recipe_button.png");
+    private static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/arcane_workbench.png");
     
     protected final ArcaneRecipeBookComponent recipeBookComponent = new ArcaneRecipeBookComponent();
     protected List<ManaCostWidget> costWidgets = new ArrayList<>();
     protected boolean widthTooNarrow;
 
-    public ArcaneWorkbenchScreen(ArcaneWorkbenchContainer screenContainer, Inventory inv, Component titleIn) {
-        super(screenContainer, inv, titleIn);
+    public ArcaneWorkbenchScreen(ArcaneWorkbenchMenu screenMenu, Inventory inv, Component titleIn) {
+        super(screenMenu, inv, titleIn);
         this.imageHeight = 183;
     }
     
@@ -57,7 +55,7 @@ public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkben
         this.initCostWidgets();
         
         // Add arcane recipe book button
-        this.addRenderableWidget(new ImageButton(this.leftPos + 105, this.topPos + 69, 20, 18, 0, 0, 19, RECIPE_BUTTON_LOCATION, (button) -> {
+        this.addRenderableWidget(new ImageButton(this.leftPos + 105, this.topPos + 69, 20, 18, RecipeBookComponent.RECIPE_BUTTON_SPRITES, (button) -> {
             this.recipeBookComponent.toggleVisibility();
             this.leftPos = this.recipeBookComponent.updateScreenPosition(this.width, this.imageWidth);
             ((ImageButton)button).setPosition(this.leftPos + 105, this.topPos + 69);
@@ -74,39 +72,36 @@ public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkben
     }
 
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         this.adjustCostWidgets();
-        this.renderBackground(matrixStack);
         if (this.recipeBookComponent.isVisible() && this.widthTooNarrow) {
-            this.renderBg(matrixStack, partialTicks, mouseX, mouseY);
-            this.recipeBookComponent.render(matrixStack, mouseX, mouseY, partialTicks);
+            this.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
+            this.recipeBookComponent.render(guiGraphics, mouseX, mouseY, partialTicks);
         } else {
-            this.recipeBookComponent.render(matrixStack, mouseX, mouseY, partialTicks);
-            super.render(matrixStack, mouseX, mouseY, partialTicks);
-            this.recipeBookComponent.renderGhostRecipe(matrixStack, this.leftPos, this.topPos, true, partialTicks);
+            super.render(guiGraphics, mouseX, mouseY, partialTicks);
+            this.recipeBookComponent.render(guiGraphics, mouseX, mouseY, partialTicks);
+            this.recipeBookComponent.renderGhostRecipe(guiGraphics, this.leftPos, this.topPos, true, partialTicks);
         }
-        this.renderTooltip(matrixStack, mouseX, mouseY);
-        this.recipeBookComponent.renderTooltip(matrixStack, this.leftPos, this.topPos, mouseX, mouseY);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
+        this.recipeBookComponent.renderTooltip(guiGraphics, this.leftPos, this.topPos, mouseX, mouseY);
     }
 
     @Override
-    protected void renderBg(PoseStack matrixStack, float partialTicks, int mouseX, int mouseY) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        this.blit(matrixStack, this.leftPos, (this.height - this.imageHeight) / 2, 0, 0, this.imageWidth, this.imageHeight);
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        guiGraphics.blit(TEXTURE, this.leftPos, (this.height - this.imageHeight) / 2, 0, 0, this.imageWidth, this.imageHeight);
     }
     
     @Override
-    protected void renderLabels(PoseStack matrixStack, int mouseX, int mouseY) {
+    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Generate text in the case that the current recipe, or lack there of, does not have a mana cost
-        IArcaneRecipe activeArcaneRecipe = this.menu.getActiveArcaneRecipe();
-        if (activeArcaneRecipe == null || activeArcaneRecipe.getManaCosts() == null || activeArcaneRecipe.getManaCosts().isEmpty()) {
-            Component text = new TranslatableComponent("primalmagick.crafting.no_mana");
+        RecipeHolder<IArcaneRecipe> activeArcaneRecipe = this.menu.getActiveArcaneRecipe();
+        if (activeArcaneRecipe == null || activeArcaneRecipe.value().getManaCosts() == null || activeArcaneRecipe.value().getManaCosts().isEmpty()) {
+            Component text = Component.translatable("label.primalmagick.crafting.no_mana");
             int width = this.font.width(text.getString());
             int x = 1 + (this.getXSize() - width) / 2;
             int y = 10 + (16 - this.font.lineHeight) / 2;
-            this.font.draw(matrixStack, text, x, y, Color.BLACK.getRGB());
+            guiGraphics.drawString(this.font, text, x, y, Color.BLACK.getRGB(), false);
         }
     }
     
@@ -116,15 +111,15 @@ public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkben
         int x = this.leftPos + 1 + (this.getXSize() - widgetSetWidth) / 2;
         int y = this.topPos + 10;
         for (Source source : Source.SORTED_SOURCES) {
-            this.costWidgets.add(this.addRenderableWidget(new ManaCostWidget(source, 0, x, y)));
+            this.costWidgets.add(this.addRenderableWidget(new ManaCostWidget(source, 0, x, y, this.menu::getWand, this.menu.getPlayer())));
             x += 18;
         }
     }
     
     protected void adjustCostWidgets() {
-        IArcaneRecipe activeArcaneRecipe = this.menu.getActiveArcaneRecipe();
+        RecipeHolder<IArcaneRecipe> activeArcaneRecipe = this.menu.getActiveArcaneRecipe();
         if (activeArcaneRecipe != null) {
-            SourceList manaCosts = activeArcaneRecipe.getManaCosts();
+            SourceList manaCosts = activeArcaneRecipe.value().getManaCosts();
             int widgetSetWidth = manaCosts.getSourcesSorted().size() * 18;
             int dx = 0;
             for (ManaCostWidget widget : this.costWidgets) {
@@ -132,7 +127,7 @@ public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkben
                 widget.visible = (amount > 0);
                 if (widget.visible) {
                     widget.setAmount(amount);
-                    widget.x = this.leftPos + 1 + dx + (this.getXSize() - widgetSetWidth) / 2;
+                    widget.setX(this.leftPos + 1 + dx + (this.getXSize() - widgetSetWidth) / 2);
                     dx += 18;
                 }
             }
@@ -168,12 +163,6 @@ public class ArcaneWorkbenchScreen extends AbstractContainerScreen<ArcaneWorkben
     protected void slotClicked(Slot p_97778_, int p_97779_, int p_97780_, ClickType p_97781_) {
         super.slotClicked(p_97778_, p_97779_, p_97780_, p_97781_);
         this.recipeBookComponent.slotClicked(p_97778_);
-    }
-
-    @Override
-    public void removed() {
-        super.removed();
-        this.recipeBookComponent.removed();
     }
 
     @Override

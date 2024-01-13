@@ -1,12 +1,11 @@
 package com.verdantartifice.primalmagick.common.blocks.misc;
 
-import java.util.Random;
-
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
 import com.verdantartifice.primalmagick.common.sources.Source;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -25,7 +24,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
@@ -42,7 +40,11 @@ public class ConsecrationFieldBlock extends Block implements SimpleWaterloggedBl
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
     
     public ConsecrationFieldBlock() {
-        super(Block.Properties.of(Material.AIR).strength(-1, 3600000).lightLevel((state) -> { return 15; }).noDrops().noOcclusion());
+        super(Block.Properties.of().replaceable().strength(-1, 3600000).lightLevel(state -> 15).isSuffocating((state, blockReader, pos) -> {
+            return false;
+        }).isViewBlocking((state, blockReader, pos) -> {
+            return false;
+        }).noLootTable().noOcclusion());
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.FALSE));
     }
 
@@ -52,7 +54,7 @@ public class ConsecrationFieldBlock extends Block implements SimpleWaterloggedBl
     }
 
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show glittering particles
         super.animateTick(stateIn, worldIn, pos, rand);
         FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Source.HALLOWED.getColor());

@@ -1,7 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:redstone",
-  "set": {
-    "earth": 5
-  }
-}

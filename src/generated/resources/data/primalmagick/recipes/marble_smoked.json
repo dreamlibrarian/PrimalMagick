@@ -1,0 +1,26 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "C": {
+      "tag": "minecraft:coals"
+    },
+    "M": {
+      "item": "primalmagick:marble_raw"
+    }
+  },
+  "mana": {
+    "sources": {
+      "moon": 5
+    }
+  },
+  "pattern": [
+    "MMM",
+    "MCM",
+    "MMM"
+  ],
+  "research": "MASTER_MANAWEAVING",
+  "result": {
+    "Count": 8,
+    "id": "primalmagick:marble_smoked"
+  }
+}

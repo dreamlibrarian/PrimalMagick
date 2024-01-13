@@ -1,0 +1,19 @@
+{
+  "type": "primalmagick:arcane_crafting_shapeless",
+  "ingredients": [
+    {
+      "tag": "minecraft:coals"
+    },
+    {
+      "item": "primalmagick:essence_dust_earth"
+    },
+    {
+      "item": "primalmagick:essence_dust_infernal"
+    }
+  ],
+  "research": "IGNYX",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:ignyx"
+  }
+}

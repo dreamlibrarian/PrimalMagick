@@ -14,19 +14,18 @@ import com.verdantartifice.primalmagick.common.entities.ai.goals.CompanionStayGo
 import com.verdantartifice.primalmagick.common.entities.ai.goals.FollowCompanionOwnerGoal;
 import com.verdantartifice.primalmagick.common.entities.companions.AbstractCompanionEntity;
 
-import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.tags.Tag;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
@@ -76,7 +75,7 @@ public abstract class AbstractEnchantedGolemEntity extends AbstractCompanionEnti
 
     public AbstractEnchantedGolemEntity(EntityType<? extends AbstractEnchantedGolemEntity> type, Level worldIn) {
         super(type, worldIn);
-        this.maxUpStep = 1.0F;
+        this.setMaxUpStep(1.0F);
     }
 
     @Override
@@ -87,9 +86,10 @@ public abstract class AbstractEnchantedGolemEntity extends AbstractCompanionEnti
 
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
+        Level level = this.level();
         super.readAdditionalSaveData(compound);
-        if (!this.level.isClientSide) {
-            this.readPersistentAngerSaveData((ServerLevel)this.level, compound);
+        if (!level.isClientSide) {
+            this.readPersistentAngerSaveData((ServerLevel)level, compound);
         }
     }
 
@@ -142,6 +142,8 @@ public abstract class AbstractEnchantedGolemEntity extends AbstractCompanionEnti
     public void aiStep() {
         super.aiStep();
         
+        Level level = this.level();
+        
         if (this.attackTimer > 0) {
             this.attackTimer--;
         }
@@ -151,16 +153,16 @@ public abstract class AbstractEnchantedGolemEntity extends AbstractCompanionEnti
             int j = Mth.floor(this.getY() - (double)0.2F);
             int k = Mth.floor(this.getZ());
             BlockPos pos = new BlockPos(i, j, k);
-            BlockState blockstate = this.level.getBlockState(pos);
+            BlockState blockstate = level.getBlockState(pos);
             
             boolean isAir = blockstate.isAir();
             if (!isAir) {
-                this.level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, blockstate).setPos(pos), this.getX() + ((double)this.random.nextFloat() - 0.5D) * (double)this.getBbWidth(), this.getY() + 0.1D, this.getZ() + ((double)this.random.nextFloat() - 0.5D) * (double)this.getBbWidth(), 4.0D * ((double)this.random.nextFloat() - 0.5D), 0.5D, ((double)this.random.nextFloat() - 0.5D) * 4.0D);
+                level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, blockstate).setPos(pos), this.getX() + ((double)this.random.nextFloat() - 0.5D) * (double)this.getBbWidth(), this.getY() + 0.1D, this.getZ() + ((double)this.random.nextFloat() - 0.5D) * (double)this.getBbWidth(), 4.0D * ((double)this.random.nextFloat() - 0.5D), 0.5D, ((double)this.random.nextFloat() - 0.5D) * 4.0D);
             }
         }
         
-        if (!this.level.isClientSide) {
-            this.updatePersistentAnger((ServerLevel)this.level, true);
+        if (!level.isClientSide) {
+            this.updatePersistentAnger((ServerLevel)level, true);
         }
     }
 
@@ -225,10 +227,10 @@ public abstract class AbstractEnchantedGolemEntity extends AbstractCompanionEnti
     @Override
     public boolean doHurtTarget(Entity entityIn) {
         this.attackTimer = 10;
-        this.level.broadcastEntityEvent(this, (byte)4);
+        this.level().broadcastEntityEvent(this, (byte)4);
         float rawDamage = (float)this.getAttributeValue(Attributes.ATTACK_DAMAGE);
         float damage = ((int)rawDamage > 0) ? (rawDamage / 2.0F) + (float)this.random.nextInt((int)rawDamage) : rawDamage;
-        boolean flag = entityIn.hurt(DamageSource.mobAttack(this), damage);
+        boolean flag = entityIn.hurt(this.level().damageSources().mobAttack(this), damage);
         if (flag) {
             entityIn.setDeltaMovement(entityIn.getDeltaMovement().add(0.0D, 0.4D, 0.0D));
             this.doEnchantDamageEffects(this, entityIn);
@@ -264,24 +266,24 @@ public abstract class AbstractEnchantedGolemEntity extends AbstractCompanionEnti
         return SoundEvents.IRON_GOLEM_DEATH;
     }
     
-    protected abstract Tag<Item> getRepairMaterialTag();
+    protected abstract TagKey<Item> getRepairMaterialTag();
     
     protected abstract float getRepairHealAmount();
 
     @Override
     protected InteractionResult mobInteract(Player playerIn, InteractionHand hand) {
+        Level level = this.level();
         ItemStack itemstack = playerIn.getItemInHand(hand);
-        Item item = itemstack.getItem();
-        if (!this.getRepairMaterialTag().contains(item)) {
+        if (!itemstack.is(this.getRepairMaterialTag())) {
             InteractionResult actionResult = super.mobInteract(playerIn, hand);
-            if (!actionResult.consumesAction() && this.isCompanionOwner(playerIn) && !this.level.isClientSide) {
-                long time = playerIn.level.getGameTime();
+            if (!actionResult.consumesAction() && this.isCompanionOwner(playerIn) && !level.isClientSide) {
+                long time = playerIn.level().getGameTime();
                 if (this.lastStayChangeTime != time) {
                     this.setCompanionStaying(!this.isCompanionStaying());
                     if (this.isCompanionStaying()) {
-                        playerIn.sendMessage(new TranslatableComponent("event.primalmagick.golem.stay"), Util.NIL_UUID);
+                        playerIn.sendSystemMessage(Component.translatable("event.primalmagick.golem.stay"));
                     } else {
-                        playerIn.sendMessage(new TranslatableComponent("event.primalmagick.golem.follow"), Util.NIL_UUID);
+                        playerIn.sendSystemMessage(Component.translatable("event.primalmagick.golem.follow"));
                     }
                     this.lastStayChangeTime = time;
                 }
@@ -300,7 +302,7 @@ public abstract class AbstractEnchantedGolemEntity extends AbstractCompanionEnti
                 if (!playerIn.getAbilities().instabuild) {
                     itemstack.shrink(1);
                 }
-                return InteractionResult.sidedSuccess(this.level.isClientSide);
+                return InteractionResult.sidedSuccess(level.isClientSide);
             }
         }
     }

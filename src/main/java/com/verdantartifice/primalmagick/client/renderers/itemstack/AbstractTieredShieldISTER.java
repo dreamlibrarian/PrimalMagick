@@ -12,12 +12,13 @@ import net.minecraft.client.model.ShieldModel;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms.TransformType;
 import net.minecraft.client.renderer.blockentity.BannerRenderer;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.resources.model.Material;
+import net.minecraft.core.Holder;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.level.block.entity.BannerBlockEntity;
@@ -43,7 +44,7 @@ public abstract class AbstractTieredShieldISTER extends BlockEntityWithoutLevelR
     }
 
     @Override
-    public void renderByItem(ItemStack stack, TransformType p_239207_2_, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
+    public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
         if (stack.getItem() instanceof AbstractTieredShieldItem) {
             boolean hasPattern = stack.getTagElement("BlockEntityTag") != null;
             matrixStack.pushPose();
@@ -52,7 +53,7 @@ public abstract class AbstractTieredShieldISTER extends BlockEntityWithoutLevelR
             VertexConsumer vertexBuilder = renderMaterial.sprite().wrap(ItemRenderer.getFoilBufferDirect(buffer, this.model.renderType(renderMaterial.atlasLocation()), true, stack.hasFoil()));
             this.model.handle().render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);
             if (hasPattern) {
-                List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.createPatterns(ShieldItem.getColor(stack), BannerBlockEntity.getItemPatterns(stack));
+                List<Pair<Holder<BannerPattern>, DyeColor>> list = BannerBlockEntity.createPatterns(ShieldItem.getColor(stack), BannerBlockEntity.getItemPatterns(stack));
                 BannerRenderer.renderPatterns(matrixStack, buffer, combinedLight, combinedOverlay, this.model.plate(), renderMaterial, false, list, stack.hasFoil());
             } else {
                 this.model.plate().render(matrixStack, vertexBuilder, combinedLight, combinedOverlay, 1.0F, 1.0F, 1.0F, 1.0F);

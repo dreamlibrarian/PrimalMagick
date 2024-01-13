@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:grass",
-  "set": {
-    "earth": 2,
-    "sun": 2
-  }
-}

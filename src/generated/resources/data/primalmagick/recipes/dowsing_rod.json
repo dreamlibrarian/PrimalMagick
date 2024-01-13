@@ -1,0 +1,33 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "D": {
+      "tag": "primalmagick:essences/terrestrial_dusts"
+    },
+    "S": {
+      "tag": "forge:rods/wooden"
+    }
+  },
+  "mana": {
+    "sources": {
+      "earth": 5,
+      "moon": 5,
+      "sea": 5,
+      "sky": 5,
+      "sun": 5
+    }
+  },
+  "pattern": [
+    "  S",
+    "SS ",
+    "DS "
+  ],
+  "research": "DOWSING_ROD",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:dowsing_rod",
+    "tag": {
+      "Damage": 0
+    }
+  }
+}

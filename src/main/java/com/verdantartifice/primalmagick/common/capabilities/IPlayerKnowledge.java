@@ -1,16 +1,18 @@
 package com.verdantartifice.primalmagick.common.capabilities;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.verdantartifice.primalmagick.PrimalMagick;
+import com.verdantartifice.primalmagick.common.research.KnowledgeType;
 import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.topics.AbstractResearchTopic;
 import com.verdantartifice.primalmagick.common.theorycrafting.Project;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.util.INBTSerializable;
 
@@ -174,6 +176,34 @@ public interface IPlayerKnowledge extends INBTSerializable<CompoundTag> {
     public void setActiveResearchProject(Project project);
     
     /**
+     * Gets the player's last active grimoire research topic.
+     * 
+     * @return the player's last active grimoire research topic
+     */
+    public AbstractResearchTopic getLastResearchTopic();
+    
+    /**
+     * Sets the player's last active grimoire research topic.
+     * 
+     * @param topic the player's last active grimoire research topic
+     */
+    public void setLastResearchTopic(AbstractResearchTopic topic);
+    
+    /**
+     * Gets the player's grimoire research topic history.
+     * 
+     * @return the player's grimoire research topic history
+     */
+    public LinkedList<AbstractResearchTopic> getResearchTopicHistory();
+    
+    /**
+     * Sets the player's grimoire research topic history.
+     * 
+     * @param history the player's grimoire research topic history
+     */
+    public void setResearchTopicHistory(List<AbstractResearchTopic> history);
+    
+    /**
      * Sync the given player's research and knowledge data to the their client.
      * 
      * @param player the player whose client should receive the data
@@ -190,32 +220,5 @@ public interface IPlayerKnowledge extends INBTSerializable<CompoundTag> {
         NEW,
         UPDATED,
         POPUP
-    }
-    
-    public static enum KnowledgeType {
-        OBSERVATION(16, new ResourceLocation(PrimalMagick.MODID, "textures/research/knowledge_observation.png")),
-        THEORY(32, new ResourceLocation(PrimalMagick.MODID, "textures/research/knowledge_theory.png"));
-        
-        private short progression;  // How many points make a complete level for this knowledge type
-        private ResourceLocation iconLocation;
-        
-        private KnowledgeType(int progression, @Nonnull ResourceLocation iconLocation) {
-            this.progression = (short)progression;
-            this.iconLocation = iconLocation;
-        }
-        
-        public int getProgression() {
-            return this.progression;
-        }
-        
-        @Nonnull
-        public ResourceLocation getIconLocation() {
-            return this.iconLocation;
-        }
-        
-        @Nonnull
-        public String getNameTranslationKey() {
-            return "primalmagick.knowledge_type." + this.name();
-        }
     }
 }

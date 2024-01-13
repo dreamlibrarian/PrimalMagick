@@ -1,0 +1,9 @@
+{
+  "type": "entity_type",
+  "target": "minecraft:glow_squid",
+  "values": {
+    "blood": 10,
+    "sea": 10,
+    "sun": 10
+  }
+}

@@ -1,14 +1,13 @@
 package com.verdantartifice.primalmagick.common.spells.payloads;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.sounds.SoundsPM;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -23,7 +22,7 @@ import net.minecraft.world.level.Level;
  */
 public class HolyDamageSpellPayload extends AbstractDamageSpellPayload {
     public static final String TYPE = "holy_damage";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_PAYLOAD_HOLY"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_PAYLOAD_HOLY.get().compoundKey();
     
     public HolyDamageSpellPayload() {
         super();
@@ -70,6 +69,6 @@ public class HolyDamageSpellPayload extends AbstractDamageSpellPayload {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.payload.detail_tooltip." + this.getPayloadType(), DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)));
+        return Component.translatable("spells.primalmagick.payload." + this.getPayloadType() + ".detail_tooltip", DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)));
     }
 }

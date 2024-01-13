@@ -1,23 +1,26 @@
 package com.verdantartifice.primalmagick.client.gui.recipe_book;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.client.recipe_book.ArcaneRecipeBookCategories;
 import com.verdantartifice.primalmagick.client.recipe_book.ArcaneSearchRegistry;
 import com.verdantartifice.primalmagick.client.recipe_book.ClientArcaneRecipeBook;
 import com.verdantartifice.primalmagick.common.capabilities.PrimalMagickCapabilities;
-import com.verdantartifice.primalmagick.common.containers.AbstractArcaneRecipeBookMenu;
 import com.verdantartifice.primalmagick.common.crafting.recipe_book.ArcaneRecipeBookType;
 import com.verdantartifice.primalmagick.common.crafting.recipe_book.StackedNbtContents;
+import com.verdantartifice.primalmagick.common.menus.base.IArcaneRecipeBookMenu;
 import com.verdantartifice.primalmagick.common.network.PacketHandler;
 import com.verdantartifice.primalmagick.common.network.packets.recipe_book.ChangeArcaneRecipeBookSettingsPacket;
 import com.verdantartifice.primalmagick.common.network.packets.recipe_book.PlaceArcaneRecipePacket;
@@ -26,52 +29,57 @@ import com.verdantartifice.primalmagick.common.network.packets.recipe_book.SeenA
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.ClientRecipeBook;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.StateSwitchingButton;
-import net.minecraft.client.gui.components.Widget;
+import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.recipebook.GhostRecipe;
 import net.minecraft.client.gui.screens.recipebook.RecipeShownListener;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.searchtree.SearchRegistry;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.recipebook.PlaceRecipe;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 /**
  * Screen component for the arcane recipe book.
  * 
  * @author Daedalus4096
  */
-public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, GuiEventListener, NarratableEntry, RecipeShownListener, PlaceRecipe<Ingredient> {
+public class ArcaneRecipeBookComponent implements Renderable, GuiEventListener, NarratableEntry, RecipeShownListener, PlaceRecipe<Ingredient> {
+    protected static final Logger LOGGER = LogManager.getLogger();
     protected static final ResourceLocation RECIPE_BOOK_LOCATION = new ResourceLocation("textures/gui/recipe_book.png");
-    protected static final Component SEARCH_HINT = (new TranslatableComponent("gui.recipebook.search_hint")).withStyle(ChatFormatting.ITALIC).withStyle(ChatFormatting.GRAY);
+    protected static final Component SEARCH_HINT = (Component.translatable("gui.recipebook.search_hint")).withStyle(ChatFormatting.ITALIC).withStyle(ChatFormatting.GRAY);
     public static final int IMAGE_WIDTH = 147;
     public static final int IMAGE_HEIGHT = 166;
     private static final int OFFSET_X_POSITION = 86;
-    private static final Component ONLY_CRAFTABLES_TOOLTIP = new TranslatableComponent("gui.recipebook.toggleRecipes.craftable");
-    private static final Component ALL_RECIPES_TOOLTIP = new TranslatableComponent("gui.recipebook.toggleRecipes.all");
-    
+    private static final Component ONLY_CRAFTABLES_TOOLTIP = Component.translatable("gui.recipebook.toggleRecipes.craftable");
+    private static final Component ALL_RECIPES_TOOLTIP = Component.translatable("gui.recipebook.toggleRecipes.all");
+    private static final WidgetSprites FILTER_SPRITES = new WidgetSprites(new ResourceLocation("recipe_book/filter_enabled"), new ResourceLocation("recipe_book/filter_disabled"), new ResourceLocation("recipe_book/filter_enabled_highlighted"), new ResourceLocation("recipe_book/filter_disabled_highlighted"));
+    private static final WidgetSprites FURNACE_FILTER_SPRITES = new WidgetSprites(new ResourceLocation("recipe_book/furnace_filter_enabled"), new ResourceLocation("recipe_book/furnace_filter_disabled"), new ResourceLocation("recipe_book/furnace_filter_enabled_highlighted"), new ResourceLocation("recipe_book/furnace_filter_disabled_highlighted"));
+
     protected int xOffset;
     protected int width;
     protected int height;
     protected final GhostRecipe ghostRecipe = new GhostRecipe();
-    protected final List<ArcaneRecipeBookTabButton> tabButtons = new ArrayList<>();
+    protected final List<ArcaneRecipeBookTabButton> tabButtons = Collections.synchronizedList(new ArrayList<>());
     @Nullable
     protected ArcaneRecipeBookTabButton selectedTab;
     protected StateSwitchingButton filterButton;
-    protected AbstractArcaneRecipeBookMenu<?> menu;
+    protected final Object filterButtonLock = new Object();
+    protected IArcaneRecipeBookMenu<?> menu;
     protected Minecraft mc;
     @Nullable
     protected EditBox searchBox;
@@ -85,28 +93,41 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
     protected boolean visible;
     protected boolean widthTooNarrow;
     protected boolean useFurnaceStyle;
+    protected boolean isLoading = true;
 
-    public void init(int width, int height, Minecraft mc, boolean tooNarrow, boolean useFurnaceStyle, AbstractArcaneRecipeBookMenu<?> menu) {
+    public void init(int width, int height, Minecraft mc, boolean tooNarrow, boolean useFurnaceStyle, IArcaneRecipeBookMenu<?> menu) {
         this.mc = mc;
         this.width = width;
         this.height = height;
         this.menu = menu;
         this.widthTooNarrow = tooNarrow;
         this.useFurnaceStyle = useFurnaceStyle;
-        mc.player.containerMenu = menu;
+        mc.player.containerMenu = menu instanceof AbstractContainerMenu containerMenu ? containerMenu : null;
         this.vanillaBook = mc.player.getRecipeBook();
-        
         this.arcaneBook = new ClientArcaneRecipeBook(PrimalMagickCapabilities.getArcaneRecipeBook(mc.player).orElseThrow(() -> new IllegalArgumentException("No arcane recipe book for player")).get());
-        this.arcaneBook.setupCollections(this.mc.level.getRecipeManager().getRecipes());
-        this.arcaneBook.getCollections().forEach(collection -> {
-            collection.updateKnownRecipes(this.vanillaBook, this.arcaneBook.getData());
-        });
         
         this.visible = this.isVisibleAccordingToBookData();
         if (this.visible) {
             this.initVisuals();
         }
-        mc.keyboardHandler.setSendRepeatsToGui(true);
+        
+        // Asynchronously set up the arcane recipe book collections
+        CompletableFuture.supplyAsync(() -> {
+            return this.mc.level.getRecipeManager().getRecipes();
+        }, Util.backgroundExecutor()).thenAccept(recipes -> {
+            this.arcaneBook.setupCollections(recipes, this.mc.level.registryAccess());
+        }).thenAccept($ -> {
+            this.arcaneBook.getCollections().forEach(collection -> collection.updateKnownRecipes(this.vanillaBook, this.arcaneBook.getData()));
+        }).thenAccept($ -> {
+            this.isLoading = false;
+        }).thenAccept($ -> {
+            if (this.visible) {
+                this.initVisuals();
+            }
+        }).exceptionally(e -> {
+            LOGGER.error("Failed to load arcane recipe book contents", e);
+            return null;
+        });
     }
     
     public void initVisuals() {
@@ -117,51 +138,53 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
         this.mc.player.getInventory().fillStackedContents(this.stackedContents);
         this.menu.fillCraftSlotsStackedContents(this.stackedContents);
         String s = this.searchBox != null ? this.searchBox.getValue() : "";
-        this.searchBox = new EditBox(this.mc.font, xPos + 25, yPos + 14, 80, 9 + 5, new TranslatableComponent("itemGroup.search"));
+        this.searchBox = new EditBox(this.mc.font, xPos + 25, yPos + 13, 81, 9 + 5, Component.translatable("itemGroup.search"));
         this.searchBox.setMaxLength(50);
-        this.searchBox.setBordered(false);
+        this.searchBox.setBordered(true);
         this.searchBox.setVisible(true);
         this.searchBox.setTextColor(0xFFFFFF);
         this.searchBox.setValue(s);
+        this.searchBox.setHint(SEARCH_HINT);
+        this.searchBox.setEditable(true);
         this.recipeBookPage.init(this.mc, xPos, yPos, this.arcaneBook.getData());
         this.recipeBookPage.addListener(this);
-        this.filterButton = new StateSwitchingButton(xPos + 110, yPos + 12, 26, 16, this.arcaneBook.getData().isFiltering(this.menu.getRecipeBookType()));
-        this.initFilterButtonTextures();
+        synchronized (this.filterButtonLock) {
+            // Don't allow the filter button to be rendered if it's being initialized on another thread, to prevent client crashes
+            this.filterButton = new StateSwitchingButton(xPos + 110, yPos + 12, 26, 16, this.arcaneBook.getData().isFiltering(this.menu.getRecipeBookType()));
+            this.initFilterButtonTextures();
+        }
+        
+        int tabPosX = (this.width - IMAGE_WIDTH) / 2 - this.xOffset - 30;
+        int tabPosY = (this.height - IMAGE_HEIGHT) / 2 + 3;
+        int tabCount = 0;
         this.tabButtons.clear();
-
         for (ArcaneRecipeBookCategories category : this.menu.getRecipeBookCategories()) {
-            this.tabButtons.add(new ArcaneRecipeBookTabButton(category));
+            ArcaneRecipeBookTabButton tab = new ArcaneRecipeBookTabButton(category);
+            tab.setPosition(tabPosX, tabPosY + 27 * tabCount++);
+            tab.visible = (category == ArcaneRecipeBookCategories.CRAFTING_SEARCH);
+            this.tabButtons.add(tab);
         }
         
         if (this.selectedTab != null) {
-            this.selectedTab = this.tabButtons.stream().filter(tab -> {
-                return tab.getCategory().equals(this.selectedTab.getCategory());
-            }).findFirst().orElse(null);
+            synchronized (this.tabButtons) {
+                this.selectedTab = this.tabButtons.stream().filter(tab -> {
+                    return tab.getCategory().equals(this.selectedTab.getCategory());
+                }).findFirst().orElse(null);
+            }
         }
         if (this.selectedTab == null) {
             this.selectedTab = this.tabButtons.get(0);
         }
         
         this.selectedTab.setStateTriggered(true);
-        this.updateCollections(false);
+        if (!this.isLoading) {
+            this.updateCollections(false);
+        }
         this.updateTabs();
     }
 
-    @Override
-    public boolean changeFocus(boolean focus) {
-        return false;
-    }
-    
     protected void initFilterButtonTextures() {
-        if (this.useFurnaceStyle) {
-            this.filterButton.initTextureValues(152, 182, 28, 18, RECIPE_BOOK_LOCATION);
-        } else {
-            this.filterButton.initTextureValues(152, 41, 28, 18, RECIPE_BOOK_LOCATION);
-        }
-    }
-    
-    public void removed() {
-        this.mc.keyboardHandler.setSendRepeatsToGui(false);
+        this.filterButton.initTextureValues(this.useFurnaceStyle ? FURNACE_FILTER_SPRITES : FILTER_SPRITES);
     }
     
     public int updateScreenPosition(int width, int imageWidth) {
@@ -230,7 +253,7 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
         if (!searchStr.isEmpty()) {
             ObjectSet<ArcaneRecipeCollection> vanillaObjectSet = new ObjectLinkedOpenHashSet<>(this.mc.getSearchTree(SearchRegistry.RECIPE_COLLECTIONS)
                     .search(searchStr.toLowerCase(Locale.ROOT)).stream().map(ArcaneRecipeCollection::new).collect(Collectors.toList()));
-            ObjectSet<ArcaneRecipeCollection> arcaneObjectSet = new ObjectLinkedOpenHashSet<>(ArcaneSearchRegistry.getInstance().getSearchTree().search(searchStr.toLowerCase(Locale.ROOT)));
+            ObjectSet<ArcaneRecipeCollection> arcaneObjectSet = new ObjectLinkedOpenHashSet<>(ArcaneSearchRegistry.getSearchTree().search(searchStr.toLowerCase(Locale.ROOT)));
             filteredCollections.removeIf(arc -> {
                 return !vanillaObjectSet.contains(arc) && !arcaneObjectSet.contains(arc);
             });
@@ -250,16 +273,18 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
         int yPos = (this.height - IMAGE_HEIGHT) / 2 + 3;
         int tabCount = 0;
         
-        for (ArcaneRecipeBookTabButton tab : this.tabButtons) {
-            ArcaneRecipeBookCategories category = tab.getCategory();
-            if (category != ArcaneRecipeBookCategories.CRAFTING_SEARCH) {
-                if (tab.updateVisibility(this.vanillaBook, this.arcaneBook)) {
+        synchronized (this.tabButtons) {
+            for (ArcaneRecipeBookTabButton tab : this.tabButtons) {
+                ArcaneRecipeBookCategories category = tab.getCategory();
+                if (category != ArcaneRecipeBookCategories.CRAFTING_SEARCH) {
+                    if (tab.updateVisibility(this.vanillaBook, this.arcaneBook)) {
+                        tab.setPosition(xPos, yPos + 27 * tabCount++);
+                        tab.startAnimation(this.mc, this.vanillaBook, this.arcaneBook);
+                    }
+                } else {
+                    tab.visible = true;
                     tab.setPosition(xPos, yPos + 27 * tabCount++);
-                    tab.startAnimation(this.mc, this.vanillaBook, this.arcaneBook);
                 }
-            } else {
-                tab.visible = true;
-                tab.setPosition(xPos, yPos + 27 * tabCount++);
             }
         }
     }
@@ -275,7 +300,6 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
                 this.updateStackedContents();
                 this.timesInventoryChanged = this.mc.player.getInventory().getTimesChanged();
             }
-            this.searchBox.tick();
         }
     }
     
@@ -283,44 +307,45 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
         this.stackedContents.clear();
         this.mc.player.getInventory().fillStackedContents(this.stackedContents);
         this.menu.fillCraftSlotsStackedContents(this.stackedContents);
-        this.updateCollections(false);
+        if (!this.isLoading) {
+            this.updateCollections(false);
+        }
     }
 
     @Override
-    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (this.isVisible()) {
-            poseStack.pushPose();
-            poseStack.translate(0.0D, 0.0D, 100.0D);
-            RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderTexture(0, RECIPE_BOOK_LOCATION);
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(0.0D, 0.0D, 100.0D);
+            guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
             int xPos = (this.width - 147) / 2 - this.xOffset;
             int yPos = (this.height - 166) / 2;
-            this.blit(poseStack, xPos, yPos, 1, 1, IMAGE_WIDTH, IMAGE_HEIGHT);
+            guiGraphics.blit(RECIPE_BOOK_LOCATION, xPos, yPos, 1, 1, IMAGE_WIDTH, IMAGE_HEIGHT);
+            this.searchBox.render(guiGraphics, mouseX, mouseY, partialTicks);
             
-            if (!this.searchBox.isFocused() && this.searchBox.getValue().isEmpty()) {
-                drawString(poseStack, this.mc.font, SEARCH_HINT, xPos + 25, yPos + 14, -1);
-            } else {
-                this.searchBox.render(poseStack, mouseX, mouseY, partialTicks);
+            synchronized (this.tabButtons) {
+                for (ArcaneRecipeBookTabButton tab : this.tabButtons) {
+                    tab.render(guiGraphics, mouseX, mouseY, partialTicks);
+                }
             }
             
-            for (ArcaneRecipeBookTabButton tab : this.tabButtons) {
-                tab.render(poseStack, mouseX, mouseY, partialTicks);
+            synchronized (this.filterButtonLock) {
+                // Don't allow the filter button to be rendered if it's being initialized on another thread, to prevent client crashes
+                this.filterButton.render(guiGraphics, mouseX, mouseY, partialTicks);
             }
-            
-            this.filterButton.render(poseStack, mouseX, mouseY, partialTicks);
-            this.recipeBookPage.render(poseStack, xPos, yPos, mouseX, mouseY, partialTicks);
-            poseStack.popPose();
+
+            this.recipeBookPage.render(guiGraphics, xPos, yPos, mouseX, mouseY, partialTicks);
+            guiGraphics.pose().popPose();
         }
     }
     
-    public void renderTooltip(PoseStack poseStack, int parentLeft, int parentTop, int mouseX, int mouseY) {
+    public void renderTooltip(GuiGraphics guiGraphics, int parentLeft, int parentTop, int mouseX, int mouseY) {
         if (this.isVisible()) {
-            this.recipeBookPage.renderTooltip(poseStack, mouseX, mouseY);
+            this.recipeBookPage.renderTooltip(guiGraphics, mouseX, mouseY);
             if (this.filterButton.isHoveredOrFocused() && this.mc.screen != null) {
-                this.mc.screen.renderTooltip(poseStack, this.getFilterButtonTooltip(), mouseX, mouseY);
+                guiGraphics.renderTooltip(this.mc.font, this.getFilterButtonTooltip(), mouseX, mouseY);
             }
-            this.renderGhostRecipeTooltip(poseStack, parentLeft, parentTop, mouseX, mouseY);
+            this.renderGhostRecipeTooltip(guiGraphics, parentLeft, parentTop, mouseX, mouseY);
         }
     }
     
@@ -332,7 +357,7 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
         return ONLY_CRAFTABLES_TOOLTIP;
     }
     
-    protected void renderGhostRecipeTooltip(PoseStack poseStack, int parentLeft, int parentTop, int mouseX, int mouseY) {
+    protected void renderGhostRecipeTooltip(GuiGraphics guiGraphics, int parentLeft, int parentTop, int mouseX, int mouseY) {
         ItemStack stack = null;
         for (int index = 0; index < this.ghostRecipe.size(); index++) {
             GhostRecipe.GhostIngredient ghostIngredient = this.ghostRecipe.get(index);
@@ -343,19 +368,19 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
             }
         }
         if (stack != null && this.mc.screen != null) {
-            this.mc.screen.renderComponentTooltip(poseStack, this.mc.screen.getTooltipFromItem(stack), mouseX, mouseY);
+            guiGraphics.renderComponentTooltip(this.mc.font, Screen.getTooltipFromItem(this.mc, stack), mouseX, mouseY);
         }
     }
     
-    public void renderGhostRecipe(PoseStack poseStack, int parentLeft, int parentTop, boolean largeSlot, float partialTicks) {
-        this.ghostRecipe.render(poseStack, this.mc, parentLeft, parentTop, largeSlot, partialTicks);
+    public void renderGhostRecipe(GuiGraphics guiGraphics, int parentLeft, int parentTop, boolean largeSlot, float partialTicks) {
+        this.ghostRecipe.render(guiGraphics, this.mc, parentLeft, parentTop, largeSlot, partialTicks);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int buttonIndex) {
         if (this.isVisible() && !this.mc.player.isSpectator()) {
             if (this.recipeBookPage.mouseClicked(mouseX, mouseY, buttonIndex, (this.width - IMAGE_WIDTH) / 2 - this.xOffset, (this.height - IMAGE_HEIGHT) / 2, IMAGE_WIDTH, IMAGE_HEIGHT)) {
-                Recipe<?> recipe = this.recipeBookPage.getLastClickedRecipe();
+                RecipeHolder<?> recipe = this.recipeBookPage.getLastClickedRecipe();
                 ArcaneRecipeCollection collection = this.recipeBookPage.getLastClickedRecipeCollection();
                 if (recipe != null && collection != null) {
                     if (!collection.isCraftable(recipe) && this.ghostRecipe.getRecipe() == recipe) {
@@ -369,27 +394,37 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
                 }
                 return true;
             } else if (this.searchBox.mouseClicked(mouseX, mouseY, buttonIndex)) {
-                return true;
-            } else if (this.filterButton.mouseClicked(mouseX, mouseY, buttonIndex)) {
-                this.filterButton.setStateTriggered(this.toggleFiltering());
-                this.sendUpdateSettings();
-                this.updateCollections(false);
+                this.searchBox.setFocused(true);
                 return true;
             } else {
-                for (ArcaneRecipeBookTabButton tab : this.tabButtons) {
-                    if (tab.mouseClicked(mouseX, mouseY, buttonIndex)) {
-                        if (this.selectedTab != tab) {
-                            if (this.selectedTab != null) {
-                                this.selectedTab.setStateTriggered(false);
+                this.searchBox.setFocused(false);
+                if (this.filterButton.mouseClicked(mouseX, mouseY, buttonIndex)) {
+                    this.filterButton.setStateTriggered(this.toggleFiltering());
+                    this.sendUpdateSettings();
+                    if (!this.isLoading) {
+                        this.updateCollections(false);
+                    }
+                    return true;
+                } else {
+                    synchronized (this.tabButtons) {
+                        for (ArcaneRecipeBookTabButton tab : this.tabButtons) {
+                            if (tab.mouseClicked(mouseX, mouseY, buttonIndex)) {
+                                if (this.selectedTab != tab) {
+                                    if (this.selectedTab != null) {
+                                        this.selectedTab.setStateTriggered(false);
+                                    }
+                                    this.selectedTab = tab;
+                                    this.selectedTab.setStateTriggered(true);
+                                    if (!this.isLoading) {
+                                        this.updateCollections(true);
+                                    }
+                                }
+                                return true;
                             }
-                            this.selectedTab = tab;
-                            this.selectedTab.setStateTriggered(true);
-                            this.updateCollections(true);
                         }
-                        return true;
+                        return false;
                     }
                 }
-                return false;
             }
         } else {
             return false;
@@ -427,7 +462,7 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
                 return true;
             } else if (this.mc.options.keyChat.matches(p_94745_, p_94746_) && !this.searchBox.isFocused()) {
                 this.ignoreTextInput = true;
-                this.searchBox.setFocus(true);
+                this.searchBox.setFocused(true);
                 return true;
             } else {
                 return false;
@@ -467,7 +502,9 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
     protected void checkSearchStringUpdate() {
         String str = this.searchBox.getValue().toLowerCase(Locale.ROOT);
         if (!str.equals(this.lastSearch)) {
-            this.updateCollections(false);
+            if (!this.isLoading) {
+                this.updateCollections(false);
+            }
             this.lastSearch = str;
         }
     }
@@ -478,14 +515,14 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
     
     public void recipesUpdated() {
         this.updateTabs();
-        if (this.isVisible()) {
+        if (this.isVisible() && !this.isLoading) {
             this.updateCollections(false);
         }
     }
 
     @Override
-    public void recipesShown(List<Recipe<?>> recipes) {
-        for (Recipe<?> recipe : recipes) {
+    public void recipesShown(List<RecipeHolder<?>> recipes) {
+        for (RecipeHolder<?> recipe : recipes) {
             this.mc.player.removeRecipeHighlight(recipe);
             if (this.arcaneBook.getData().willHighlight(recipe)) {
                 this.arcaneBook.getData().removeHighlight(recipe);
@@ -494,18 +531,18 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
         }
     }
     
-    public void setupGhostRecipe(Recipe<?> recipe, List<Slot> slots) {
-        ItemStack stack = recipe.getResultItem();
+    public void setupGhostRecipe(RecipeHolder<?> recipe, List<Slot> slots) {
+        ItemStack stack = recipe.value().getResultItem(this.mc.level.registryAccess());
         this.ghostRecipe.setRecipe(recipe);
         this.ghostRecipe.addIngredient(Ingredient.of(stack), (slots.get(0)).x, (slots.get(0)).y);
-        this.placeRecipe(this.menu.getGridWidth(), this.menu.getGridHeight(), this.menu.getResultSlotIndex(), recipe, recipe.getIngredients().iterator(), 0);
+        this.placeRecipe(this.menu.getGridWidth(), this.menu.getGridHeight(), this.menu.getResultSlotIndex(), recipe, recipe.value().getIngredients().iterator(), 0);
     }
 
     @Override
     public void addItemToSlot(Iterator<Ingredient> iterator, int slotIndex, int count, int p_135418_, int p_135419_) {
         Ingredient ingredient = iterator.next();
         if (!ingredient.isEmpty()) {
-            Slot slot = this.menu.slots.get(slotIndex);
+            Slot slot = this.menu.getSlots().get(slotIndex);
             this.ghostRecipe.addIngredient(ingredient, slot.x, slot.y);
         }
     }
@@ -537,5 +574,15 @@ public class ArcaneRecipeBookComponent extends GuiComponent implements Widget, G
         if (result != null) {
             result.entry.updateNarration(output.nest());
         }
+    }
+
+    @Override
+    public void setFocused(boolean p_265728_) {
+        // Do nothing
+    }
+
+    @Override
+    public boolean isFocused() {
+        return false;
     }
 }

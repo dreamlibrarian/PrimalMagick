@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:feather_falling",
-  "multiplier": {
-    "sky": 1
-  }
-}

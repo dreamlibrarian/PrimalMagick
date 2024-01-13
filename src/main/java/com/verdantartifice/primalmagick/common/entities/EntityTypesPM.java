@@ -33,9 +33,9 @@ import com.verdantartifice.primalmagick.common.entities.companions.pixies.Majest
 import com.verdantartifice.primalmagick.common.entities.companions.pixies.MajesticSunPixieEntity;
 import com.verdantartifice.primalmagick.common.entities.companions.pixies.MajesticVoidPixieEntity;
 import com.verdantartifice.primalmagick.common.entities.misc.FlyingCarpetEntity;
+import com.verdantartifice.primalmagick.common.entities.misc.FriendlyWitchEntity;
 import com.verdantartifice.primalmagick.common.entities.misc.InnerDemonEntity;
 import com.verdantartifice.primalmagick.common.entities.misc.SinCrystalEntity;
-import com.verdantartifice.primalmagick.common.entities.misc.TreefolkEntity;
 import com.verdantartifice.primalmagick.common.entities.projectiles.AbstractTridentEntity;
 import com.verdantartifice.primalmagick.common.entities.projectiles.AlchemicalBombEntity;
 import com.verdantartifice.primalmagick.common.entities.projectiles.AppleEntity;
@@ -49,6 +49,7 @@ import com.verdantartifice.primalmagick.common.entities.projectiles.PrimaliteTri
 import com.verdantartifice.primalmagick.common.entities.projectiles.SinCrashEntity;
 import com.verdantartifice.primalmagick.common.entities.projectiles.SpellMineEntity;
 import com.verdantartifice.primalmagick.common.entities.projectiles.SpellProjectileEntity;
+import com.verdantartifice.primalmagick.common.entities.treefolk.TreefolkEntity;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -63,7 +64,7 @@ import net.minecraftforge.registries.RegistryObject;
  * @author Daedalus4096
  */
 public class EntityTypesPM {
-    private static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.ENTITIES, PrimalMagick.MODID);
+    private static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, PrimalMagick.MODID);
     
     public static void init() {
         ENTITY_TYPES.register(FMLJavaModLoadingContext.get().getModEventBus());
@@ -161,18 +162,23 @@ public class EntityTypesPM {
             .clientTrackingRange(10)
             .setCustomClientFactory((spawnEntity, world) -> new InnerDemonEntity(EntityTypesPM.INNER_DEMON.get(), world))
             .build(PrimalMagick.MODID + ":inner_demon"));
-    public static final RegistryObject<EntityType<PrimaliteGolemEntity>> PRIMALITE_GOLEM = ENTITY_TYPES.register("primalite_golem", () -> EntityType.Builder.<PrimaliteGolemEntity>of(PrimaliteGolemEntity::new, MobCategory.MISC)
+    public static final RegistryObject<EntityType<FriendlyWitchEntity>> FRIENDLY_WITCH = ENTITY_TYPES.register("friendly_witch", () -> EntityType.Builder.<FriendlyWitchEntity>of(FriendlyWitchEntity::new, MobCategory.CREATURE)
+            .sized(0.6F, 1.95F)
+            .clientTrackingRange(8)
+            .setCustomClientFactory((spawnEntity, world) -> new FriendlyWitchEntity(EntityTypesPM.FRIENDLY_WITCH.get(), world))
+            .build(PrimalMagick.MODID + ":friendly_witch"));
+    public static final RegistryObject<EntityType<PrimaliteGolemEntity>> PRIMALITE_GOLEM = ENTITY_TYPES.register("primalite_golem", () -> EntityType.Builder.<PrimaliteGolemEntity>of(PrimaliteGolemEntity::new, MobCategory.CREATURE)
             .sized(1.4F, 2.7F)
             .clientTrackingRange(10)
             .setCustomClientFactory((spawnEntity, world) -> new PrimaliteGolemEntity(EntityTypesPM.PRIMALITE_GOLEM.get(), world))
             .build(PrimalMagick.MODID + ":primalite_golem"));
-    public static final RegistryObject<EntityType<HexiumGolemEntity>> HEXIUM_GOLEM = ENTITY_TYPES.register("hexium_golem", () -> EntityType.Builder.<HexiumGolemEntity>of(HexiumGolemEntity::new, MobCategory.MISC)
+    public static final RegistryObject<EntityType<HexiumGolemEntity>> HEXIUM_GOLEM = ENTITY_TYPES.register("hexium_golem", () -> EntityType.Builder.<HexiumGolemEntity>of(HexiumGolemEntity::new, MobCategory.CREATURE)
             .sized(1.4F, 2.7F)
             .fireImmune()
             .clientTrackingRange(10)
             .setCustomClientFactory((spawnEntity, world) -> new HexiumGolemEntity(EntityTypesPM.HEXIUM_GOLEM.get(), world))
             .build(PrimalMagick.MODID + ":hexium_golem"));
-    public static final RegistryObject<EntityType<HallowsteelGolemEntity>> HALLOWSTEEL_GOLEM = ENTITY_TYPES.register("hallowsteel_golem", () -> EntityType.Builder.<HallowsteelGolemEntity>of(HallowsteelGolemEntity::new, MobCategory.MISC)
+    public static final RegistryObject<EntityType<HallowsteelGolemEntity>> HALLOWSTEEL_GOLEM = ENTITY_TYPES.register("hallowsteel_golem", () -> EntityType.Builder.<HallowsteelGolemEntity>of(HallowsteelGolemEntity::new, MobCategory.CREATURE)
             .sized(1.4F, 2.7F)
             .fireImmune()
             .clientTrackingRange(10)
@@ -270,16 +276,19 @@ public class EntityTypesPM {
             .build(PrimalMagick.MODID + ":pixie_majestic_blood"));
     public static final RegistryObject<EntityType<AbstractPixieEntity>> BASIC_INFERNAL_PIXIE = ENTITY_TYPES.register("pixie_basic_infernal", () -> EntityType.Builder.<AbstractPixieEntity>of(BasicInfernalPixieEntity::new, MobCategory.CREATURE)
             .sized(0.5F, 0.5F)
+            .fireImmune()
             .clientTrackingRange(10)
             .setCustomClientFactory((spawnEntity, world) -> new BasicInfernalPixieEntity(EntityTypesPM.BASIC_INFERNAL_PIXIE.get(), world))
             .build(PrimalMagick.MODID + ":pixie_basic_infernal"));
     public static final RegistryObject<EntityType<AbstractPixieEntity>> GRAND_INFERNAL_PIXIE = ENTITY_TYPES.register("pixie_grand_infernal", () -> EntityType.Builder.<AbstractPixieEntity>of(GrandInfernalPixieEntity::new, MobCategory.CREATURE)
             .sized(0.5F, 0.5F)
+            .fireImmune()
             .clientTrackingRange(10)
             .setCustomClientFactory((spawnEntity, world) -> new GrandInfernalPixieEntity(EntityTypesPM.GRAND_INFERNAL_PIXIE.get(), world))
             .build(PrimalMagick.MODID + ":pixie_grand_infernal"));
     public static final RegistryObject<EntityType<AbstractPixieEntity>> MAJESTIC_INFERNAL_PIXIE = ENTITY_TYPES.register("pixie_majestic_infernal", () -> EntityType.Builder.<AbstractPixieEntity>of(MajesticInfernalPixieEntity::new, MobCategory.CREATURE)
             .sized(0.5F, 0.5F)
+            .fireImmune()
             .clientTrackingRange(10)
             .setCustomClientFactory((spawnEntity, world) -> new MajesticInfernalPixieEntity(EntityTypesPM.MAJESTIC_BLOOD_PIXIE.get(), world))
             .build(PrimalMagick.MODID + ":pixie_majestic_blood"));

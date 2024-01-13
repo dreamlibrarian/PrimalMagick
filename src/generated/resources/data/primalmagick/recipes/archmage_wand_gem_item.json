@@ -1,0 +1,25 @@
+{
+  "type": "primalmagick:arcane_crafting_shapeless",
+  "ingredients": [
+    {
+      "tag": "forge:gems/diamond"
+    },
+    {
+      "tag": "primalmagick:essences/terrestrial_clusters"
+    }
+  ],
+  "mana": {
+    "sources": {
+      "earth": 300,
+      "moon": 300,
+      "sea": 300,
+      "sky": 300,
+      "sun": 300
+    }
+  },
+  "research": "WAND_GEM_ARCHMAGE",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:archmage_wand_gem_item"
+  }
+}

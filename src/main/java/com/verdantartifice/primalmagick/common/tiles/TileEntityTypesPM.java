@@ -7,15 +7,20 @@ import com.verdantartifice.primalmagick.common.tiles.crafting.ConcocterTileEntit
 import com.verdantartifice.primalmagick.common.tiles.crafting.EssenceFurnaceTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.crafting.RunecarvingTableTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.crafting.RunescribingAltarTileEntity;
+import com.verdantartifice.primalmagick.common.tiles.crafting.SpellcraftingAltarTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.devices.DissolutionChamberTileEntity;
+import com.verdantartifice.primalmagick.common.tiles.devices.EssenceCaskTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.devices.EssenceTransmuterTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.devices.HoneyExtractorTileEntity;
+import com.verdantartifice.primalmagick.common.tiles.devices.InfernalFurnaceTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.devices.ResearchTableTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.devices.SanguineCrucibleTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.devices.SunlampTileEntity;
+import com.verdantartifice.primalmagick.common.tiles.devices.WindGeneratorTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.mana.AncientManaFontTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.mana.ArtificialManaFontTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.mana.AutoChargerTileEntity;
+import com.verdantartifice.primalmagick.common.tiles.mana.ManaBatteryTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.mana.WandChargerTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.rituals.BloodletterTileEntity;
 import com.verdantartifice.primalmagick.common.tiles.rituals.CelestialHarpTileEntity;
@@ -40,7 +45,7 @@ import net.minecraftforge.registries.RegistryObject;
  * @author Daedalus4096
  */
 public class TileEntityTypesPM {
-    private static final DeferredRegister<BlockEntityType<?>> TILE_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITIES, PrimalMagick.MODID);
+    private static final DeferredRegister<BlockEntityType<?>> TILE_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, PrimalMagick.MODID);
     
     public static void init() {
         TILE_ENTITIES.register(FMLJavaModLoadingContext.get().getModEventBus());
@@ -71,4 +76,9 @@ public class TileEntityTypesPM {
     public static final RegistryObject<BlockEntityType<RunecarvingTableTileEntity>> RUNECARVING_TABLE = TILE_ENTITIES.register("runecarving_table", () -> BlockEntityType.Builder.of(RunecarvingTableTileEntity::new, BlocksPM.RUNECARVING_TABLE.get()).build(null));
     public static final RegistryObject<BlockEntityType<EssenceTransmuterTileEntity>> ESSENCE_TRANSMUTER = TILE_ENTITIES.register("essence_transmuter", () -> BlockEntityType.Builder.of(EssenceTransmuterTileEntity::new, BlocksPM.ESSENCE_TRANSMUTER.get()).build(null));
     public static final RegistryObject<BlockEntityType<DissolutionChamberTileEntity>> DISSOLUTION_CHAMBER = TILE_ENTITIES.register("dissolution_chamber", () -> BlockEntityType.Builder.of(DissolutionChamberTileEntity::new, BlocksPM.DISSOLUTION_CHAMBER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<SpellcraftingAltarTileEntity>> SPELLCRAFTING_ALTAR = TILE_ENTITIES.register("spellcrafting_altar", () -> BlockEntityType.Builder.of(SpellcraftingAltarTileEntity::new, BlocksPM.SPELLCRAFTING_ALTAR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<WindGeneratorTileEntity>> WIND_GENERATOR = TILE_ENTITIES.register("wind_generator", () -> BlockEntityType.Builder.of(WindGeneratorTileEntity::new, BlocksPM.ZEPHYR_ENGINE.get(), BlocksPM.VOID_TURBINE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<EssenceCaskTileEntity>> ESSENCE_CASK = TILE_ENTITIES.register("essence_cask", () -> BlockEntityType.Builder.of(EssenceCaskTileEntity::new, BlocksPM.ESSENCE_CASK_ENCHANTED.get(), BlocksPM.ESSENCE_CASK_FORBIDDEN.get(), BlocksPM.ESSENCE_CASK_HEAVENLY.get()).build(null));
+    public static final RegistryObject<BlockEntityType<InfernalFurnaceTileEntity>> INFERNAL_FURNACE = TILE_ENTITIES.register("infernal_furnace", () -> BlockEntityType.Builder.of(InfernalFurnaceTileEntity::new, BlocksPM.INFERNAL_FURNACE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<ManaBatteryTileEntity>> MANA_BATTERY = TILE_ENTITIES.register("mana_battery", () -> BlockEntityType.Builder.of(ManaBatteryTileEntity::new, BlocksPM.MANA_NEXUS.get(), BlocksPM.MANA_SINGULARITY.get(), BlocksPM.MANA_SINGULARITY_CREATIVE.get()).build(null));
 }

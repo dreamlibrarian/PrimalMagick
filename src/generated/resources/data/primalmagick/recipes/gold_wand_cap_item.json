@@ -1,0 +1,26 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "N": {
+      "tag": "forge:nuggets/gold"
+    }
+  },
+  "mana": {
+    "sources": {
+      "earth": 5,
+      "moon": 5,
+      "sea": 5,
+      "sky": 5,
+      "sun": 5
+    }
+  },
+  "pattern": [
+    "NNN",
+    "N N"
+  ],
+  "research": "WAND_CAP_GOLD",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:gold_wand_cap_item"
+  }
+}

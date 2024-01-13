@@ -1,7 +1,7 @@
 package com.verdantartifice.primalmagick.common.spells.payloads;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.sounds.SoundsPM;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
@@ -17,6 +17,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.FluidState;
@@ -34,7 +35,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class ConjureAnimalSpellPayload extends AbstractSpellPayload {
     public static final String TYPE = "conjure_animal";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_PAYLOAD_CONJURE_ANIMAL"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_PAYLOAD_CONJURE_ANIMAL.get().compoundKey();
     protected static final WeightedRandomBag<EntityType<?>> LAND_ANIMALS = Util.make(new WeightedRandomBag<>(), bag -> {
         bag.add(EntityType.BAT, 2);
         bag.add(EntityType.CAT, 5);
@@ -91,8 +92,8 @@ public class ConjureAnimalSpellPayload extends AbstractSpellPayload {
         EntityType<?> entityType = (state.is(FluidTags.WATER) && state.isSource()) ? 
                 WATER_ANIMALS.getRandom(world.random) : 
                 LAND_ANIMALS.getRandom(world.random);
-        if (entityType != null && world instanceof ServerLevel) {
-            entityType.spawn((ServerLevel)world, null, null, pos, MobSpawnType.MOB_SUMMONED, false, false);
+        if (entityType != null && world instanceof ServerLevel serverWorld) {
+            entityType.spawn(serverWorld, (ItemStack)null, (Player)null, pos, MobSpawnType.MOB_SUMMONED, false, false);
         }
     }
 

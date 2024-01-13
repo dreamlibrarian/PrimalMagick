@@ -1,0 +1,39 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "minecraft:rose_bush"
+    },
+    {
+      "item": "primalmagick:bloody_flesh"
+    },
+    {
+      "item": "minecraft:cactus"
+    },
+    {
+      "item": "primalmagick:essence_shard_blood"
+    },
+    {
+      "item": "primalmagick:rune_blood"
+    }
+  ],
+  "instability": 4,
+  "mana": {
+    "sources": {
+      "blood": 50
+    }
+  },
+  "props": [
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "block": "primalmagick:bloodletter"
+    }
+  ],
+  "research": "BLOOD_ROSE",
+  "result": {
+    "Count": 2,
+    "id": "primalmagick:blood_rose"
+  }
+}

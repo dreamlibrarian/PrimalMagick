@@ -1,7 +1,5 @@
 package com.verdantartifice.primalmagick.common.entities.projectiles;
 
-import java.util.Random;
-
 import javax.annotation.Nullable;
 
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
@@ -13,6 +11,7 @@ import com.verdantartifice.primalmagick.common.sources.Source;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
@@ -80,7 +79,8 @@ public class ManaArrowEntity extends AbstractArrow {
         if (this.getSource() == Source.SKY && this.isNoGravity() && this.isInWater()) {
             this.setNoGravity(false);
         }
-        if (this.level.isClientSide) {
+        Level level = this.level();
+        if (level.isClientSide) {
             if (this.inGround) {
                 if (this.inGroundTime % 5 == 0) {
                     this.makeParticle(1);
@@ -94,7 +94,8 @@ public class ManaArrowEntity extends AbstractArrow {
     protected void makeParticle(int count) {
         Source source = this.getSource();
         if (source != null && count > 0) {
-            Random rng = this.level.random;
+            Level level = this.level();
+            RandomSource rng = level.random;
             int color = source.getColor();
             for (int index = 0; index < count; index++) {
                 // Generate mana sparkle particle in a random direction

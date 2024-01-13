@@ -1,8 +1,0 @@
-{
-  "type": "entity_type",
-  "target": "minecraft:axolotl",
-  "values": {
-    "sea": 10,
-    "blood": 10
-  }
-}

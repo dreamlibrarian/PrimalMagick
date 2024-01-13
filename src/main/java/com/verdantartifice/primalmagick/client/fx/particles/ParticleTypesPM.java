@@ -51,4 +51,14 @@ public class ParticleTypesPM {
             return NoteEmitterParticleData.CODEC;
         }
     });
+    public static final RegistryObject<SimpleParticleType> SPELLCRAFTING_RUNE_U = PARTICLE_TYPES.register("spellcrafting_rune_u", () -> new SimpleParticleType(true));
+    public static final RegistryObject<SimpleParticleType> SPELLCRAFTING_RUNE_V = PARTICLE_TYPES.register("spellcrafting_rune_v", () -> new SimpleParticleType(true));
+    public static final RegistryObject<SimpleParticleType> SPELLCRAFTING_RUNE_T = PARTICLE_TYPES.register("spellcrafting_rune_t", () -> new SimpleParticleType(true));
+    public static final RegistryObject<SimpleParticleType> SPELLCRAFTING_RUNE_D = PARTICLE_TYPES.register("spellcrafting_rune_d", () -> new SimpleParticleType(true));
+    public static final RegistryObject<SimpleParticleType> INFERNAL_FLAME = PARTICLE_TYPES.register("infernal_flame", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> AIR_CURRENT = PARTICLE_TYPES.register("air_current", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> VOID_SMOKE = PARTICLE_TYPES.register("void_smoke", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> DRIPPING_BLOOD_DROP = PARTICLE_TYPES.register("dripping_blood_drop", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> FALLING_BLOOD_DROP = PARTICLE_TYPES.register("falling_blood_drop", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> LANDING_BLOOD_DROP = PARTICLE_TYPES.register("landing_blood_drop", () -> new SimpleParticleType(false));
 }

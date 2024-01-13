@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:moss_block",
-  "set": {
-    "earth": 5,
-    "moon": 5
-  }
-}

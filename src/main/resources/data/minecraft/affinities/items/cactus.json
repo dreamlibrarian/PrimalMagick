@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:cactus",
-  "set": {
-    "earth": 5,
-    "sun": 5
-  }
-}

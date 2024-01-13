@@ -2,9 +2,8 @@ package com.verdantartifice.primalmagick;
 
 import com.verdantartifice.primalmagick.common.config.Config;
 import com.verdantartifice.primalmagick.common.init.InitRegistries;
-import com.verdantartifice.primalmagick.common.misc.ItemGroupPM;
 
-import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.common.Mod;
 
 /**
@@ -20,10 +19,13 @@ import net.minecraftforge.fml.common.Mod;
 @Mod(PrimalMagick.MODID)
 public class PrimalMagick {
     public static final String MODID = "primalmagick";
-    public static final CreativeModeTab ITEM_GROUP = new ItemGroupPM();
     
     public PrimalMagick() {
         Config.register();
         InitRegistries.initDeferredRegistries();
+    }
+    
+    public static ResourceLocation resource(String name) {
+        return new ResourceLocation(MODID, name);
     }
 }

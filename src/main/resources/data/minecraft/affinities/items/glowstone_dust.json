@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:glowstone_dust",
-  "set": {
-    "sun": 10,
-    "infernal": 5
-  }
-}

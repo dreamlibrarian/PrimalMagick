@@ -1,0 +1,16 @@
+{
+  "type": "primalmagick:dissolution",
+  "group": "gold_grit_dissolution",
+  "ingredient": {
+    "tag": "forge:ores/gold"
+  },
+  "mana": {
+    "sources": {
+      "earth": 1
+    }
+  },
+  "result": {
+    "Count": 3,
+    "id": "primalmagick:gold_grit"
+  }
+}

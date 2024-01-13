@@ -1,20 +1,24 @@
 package com.verdantartifice.primalmagick.common.tiles.mana;
 
+import java.util.OptionalInt;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-import com.verdantartifice.primalmagick.common.containers.WandChargerContainer;
+import com.verdantartifice.primalmagick.common.capabilities.IManaStorage;
+import com.verdantartifice.primalmagick.common.capabilities.ItemStackHandlerPM;
+import com.verdantartifice.primalmagick.common.capabilities.PrimalMagickCapabilities;
 import com.verdantartifice.primalmagick.common.items.essence.EssenceItem;
-import com.verdantartifice.primalmagick.common.items.essence.EssenceType;
+import com.verdantartifice.primalmagick.common.menus.WandChargerMenu;
 import com.verdantartifice.primalmagick.common.tiles.TileEntityTypesPM;
-import com.verdantartifice.primalmagick.common.tiles.base.TileInventoryPM;
+import com.verdantartifice.primalmagick.common.tiles.base.AbstractTileSidedInventoryPM;
 import com.verdantartifice.primalmagick.common.wands.IWand;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.LongTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -24,6 +28,7 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.items.ItemStackHandler;
 
 /**
  * Definition of a wand charger tile entity.  Provides the recharge and wand interaction functionality
@@ -32,10 +37,9 @@ import net.minecraft.world.level.block.state.BlockState;
  * @author Daedalus4096
  * @see {@link com.verdantartifice.primalmagick.common.blocks.mana.WandChargerBlock}
  */
-public class WandChargerTileEntity extends TileInventoryPM implements MenuProvider {
-    protected static final int[] SLOTS_FOR_UP = new int[] { 0 };
-    protected static final int[] SLOTS_FOR_DOWN = new int[0];
-    protected static final int[] SLOTS_FOR_SIDES = new int[] { 1 };
+public class WandChargerTileEntity extends AbstractTileSidedInventoryPM implements MenuProvider {
+    public static final int INPUT_INV_INDEX = 0;
+    public static final int CHARGE_INV_INDEX = 1;
     
     protected int chargeTime;
     protected int chargeTimeTotal;
@@ -73,13 +77,13 @@ public class WandChargerTileEntity extends TileInventoryPM implements MenuProvid
     };
     
     public WandChargerTileEntity(BlockPos pos, BlockState state) {
-        super(TileEntityTypesPM.WAND_CHARGER.get(), pos, state, 2);
+        super(TileEntityTypesPM.WAND_CHARGER.get(), pos, state);
     }
     
     @Override
-    protected Set<Integer> getSyncedSlotIndices() {
+    protected Set<Integer> getSyncedSlotIndices(int inventoryIndex) {
         // Sync the charger's wand input/output stack for client rendering use
-        return ImmutableSet.of(Integer.valueOf(1));
+        return inventoryIndex == CHARGE_INV_INDEX ? ImmutableSet.of(0) : ImmutableSet.of();
     }
     
     @Override
@@ -98,21 +102,21 @@ public class WandChargerTileEntity extends TileInventoryPM implements MenuProvid
 
     @Override
     public AbstractContainerMenu createMenu(int windowId, Inventory playerInv, Player player) {
-        return new WandChargerContainer(windowId, playerInv, this, this.chargerData);
+        return new WandChargerMenu(windowId, playerInv, this.getBlockPos(), this, this.chargerData);
     }
 
     @Override
     public Component getDisplayName() {
-        return new TranslatableComponent(this.getBlockState().getBlock().getDescriptionId());
+        return Component.translatable(this.getBlockState().getBlock().getDescriptionId());
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, WandChargerTileEntity entity) {
         boolean shouldMarkDirty = false;
         
         if (!level.isClientSide) {
-            ItemStack inputStack = entity.items.get(0);
-            ItemStack wandStack = entity.items.get(1);
-            if (!inputStack.isEmpty() && !wandStack.isEmpty()) {
+            ItemStack inputStack = entity.getItem(INPUT_INV_INDEX, 0);
+            ItemStack chargeStack = entity.getItem(CHARGE_INV_INDEX, 0);
+            if (!inputStack.isEmpty() && !chargeStack.isEmpty()) {
                 if (entity.canCharge()) {
                     // If there's an essence in the input slot and the slotted wand isn't full, do the charge
                     entity.chargeTime++;
@@ -142,51 +146,43 @@ public class WandChargerTileEntity extends TileInventoryPM implements MenuProvid
     }
     
     protected boolean canCharge() {
-        ItemStack inputStack = this.items.get(0);
-        ItemStack wandStack = this.items.get(1);
-        if (inputStack != null && !inputStack.isEmpty() && inputStack.getItem() instanceof EssenceItem &&
-            wandStack != null && !wandStack.isEmpty() && wandStack.getItem() instanceof IWand) {
-            // The wand can be charged if it and an essence are slotted, and the wand is not at max mana for the essence's source
-            EssenceItem essence = (EssenceItem)inputStack.getItem();
-            IWand wand = (IWand)wandStack.getItem();
-            return (wand.getMana(wandStack, essence.getSource()) < wand.getMaxMana(wandStack));
-        } else {
-            return false;
+        ItemStack inputStack = this.getItem(INPUT_INV_INDEX, 0);
+        ItemStack chargeStack = this.getItem(CHARGE_INV_INDEX, 0);
+        if (inputStack != null && !inputStack.isEmpty() && inputStack.getItem() instanceof EssenceItem essence && chargeStack != null && !chargeStack.isEmpty()) {
+            if (chargeStack.getItem() instanceof IWand wand) {
+                // The wand can be charged if it and an essence are slotted, and the wand is not at max mana for the essence's source
+                return (wand.getMana(chargeStack, essence.getSource()) < wand.getMaxMana(chargeStack));
+            } else if (chargeStack.getCapability(PrimalMagickCapabilities.MANA_STORAGE).isPresent()) {
+                // The mana storage item can be charged if it and an essence are slotted, and the storage is not at max mana for the essence's source
+                IManaStorage manaCap = chargeStack.getCapability(PrimalMagickCapabilities.MANA_STORAGE).orElseThrow(IllegalArgumentException::new);
+                return (manaCap.getManaStored(essence.getSource()) < manaCap.getMaxManaStored(essence.getSource()));
+            }
         }
+        return false;
     }
     
     protected void doCharge() {
-        ItemStack inputStack = this.items.get(0);
-        ItemStack wandStack = this.items.get(1);
+        ItemStack inputStack = this.getItem(INPUT_INV_INDEX, 0);
+        ItemStack chargeStack = this.getItem(CHARGE_INV_INDEX, 0);
         if (this.canCharge()) {
             EssenceItem essence = (EssenceItem)inputStack.getItem();
-            IWand wand = (IWand)wandStack.getItem();
-            wand.addRealMana(wandStack, essence.getSource(), this.getManaForEssenceType(essence.getEssenceType()));
+            if (chargeStack.getItem() instanceof IWand wand) {
+                wand.addRealMana(chargeStack, essence.getSource(), essence.getEssenceType().getManaEquivalent());
+            } else {
+                IManaStorage manaCap = chargeStack.getCapability(PrimalMagickCapabilities.MANA_STORAGE).orElseThrow(IllegalArgumentException::new);
+                manaCap.receiveMana(essence.getSource(), 100 * essence.getEssenceType().getManaEquivalent(), false);
+                chargeStack.getOrCreateTag().put("LastUpdated", LongTag.valueOf(System.currentTimeMillis()));   // FIXME Is there a better way of marking this stack as dirty?
+            }
             inputStack.shrink(1);
         }
     }
     
-    protected int getManaForEssenceType(EssenceType type) {
-        switch (type) {
-        case DUST:
-            return 1;
-        case SHARD:
-            return 10;
-        case CRYSTAL:
-            return 100;
-        case CLUSTER:
-            return 1000;
-        default:
-            return 0;
-        }
-    }
-
     @Override
-    public void setItem(int index, ItemStack stack) {
-        ItemStack slotStack = this.items.get(index);
-        super.setItem(index, stack);
-        boolean flag = !stack.isEmpty() && stack.sameItem(slotStack) && ItemStack.tagMatches(stack, slotStack);
-        if (index == 0 && !flag) {
+    public void setItem(int invIndex, int slotIndex, ItemStack stack) {
+        ItemStack slotStack = this.getItem(invIndex, slotIndex);
+        super.setItem(invIndex, slotIndex, stack);
+        boolean flag = !stack.isEmpty() && ItemStack.isSameItemSameTags(stack, slotStack);
+        if (invIndex == INPUT_INV_INDEX && !flag) {
             this.chargeTimeTotal = this.getChargeTimeTotal();
             this.chargeTime = 0;
             this.setChanged();
@@ -194,32 +190,56 @@ public class WandChargerTileEntity extends TileInventoryPM implements MenuProvid
     }
 
     @Override
-    public boolean canPlaceItem(int slotIndex, ItemStack stack) {
-        if (slotIndex == 0) {
-            return stack.getItem() instanceof EssenceItem;
-        } else {
-            return stack.getItem() instanceof IWand;
-        }
+    protected int getInventoryCount() {
+        return 2;
     }
 
     @Override
-    public int[] getSlotsForFace(Direction side) {
-        if (side == Direction.UP) {
-            return SLOTS_FOR_UP;
-        } else if (side == Direction.DOWN) {
-            return SLOTS_FOR_DOWN;
-        } else {
-            return SLOTS_FOR_SIDES;
-        }
+    protected int getInventorySize(int inventoryIndex) {
+        return switch (inventoryIndex) {
+            case INPUT_INV_INDEX, CHARGE_INV_INDEX -> 1;
+            default -> 0;
+        };
     }
 
     @Override
-    public boolean canPlaceItemThroughFace(int index, ItemStack itemStackIn, Direction direction) {
-        return this.canPlaceItem(index, itemStackIn);
+    protected OptionalInt getInventoryIndexForFace(Direction face) {
+        return switch (face) {
+            case UP -> OptionalInt.of(INPUT_INV_INDEX);
+            case DOWN -> OptionalInt.empty();
+            default -> OptionalInt.of(CHARGE_INV_INDEX);
+        };
     }
 
     @Override
-    public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) {
-        return true;
+    protected NonNullList<ItemStackHandler> createHandlers() {
+        NonNullList<ItemStackHandler> retVal = NonNullList.withSize(this.getInventoryCount(), new ItemStackHandlerPM(this));
+        
+        // Create input handler
+        retVal.set(INPUT_INV_INDEX, new ItemStackHandlerPM(this.inventories.get(INPUT_INV_INDEX), this) {
+            @Override
+            public boolean isItemValid(int slot, ItemStack stack) {
+                return stack.getItem() instanceof EssenceItem;
+            }
+        });
+        
+        // Create charge handler
+        retVal.set(CHARGE_INV_INDEX, new ItemStackHandlerPM(this.inventories.get(CHARGE_INV_INDEX), this) {
+            @Override
+            public boolean isItemValid(int slot, ItemStack stack) {
+                return (stack.getItem() instanceof IWand) || stack.getCapability(PrimalMagickCapabilities.MANA_STORAGE).isPresent();
+            }
+        });
+
+        return retVal;
+    }
+
+    @Override
+    protected void loadLegacyItems(NonNullList<ItemStack> legacyItems) {
+        // Slot 0 was the input item stack
+        this.setItem(INPUT_INV_INDEX, 0, legacyItems.get(0));
+        
+        // Slot 1 was the charge item stack
+        this.setItem(CHARGE_INV_INDEX, 0, legacyItems.get(1));
     }
 }

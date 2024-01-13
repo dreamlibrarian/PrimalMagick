@@ -1,0 +1,8 @@
+{
+  "type": "item",
+  "set": {
+    "blood": 5,
+    "sky": 5
+  },
+  "target": "minecraft:chicken"
+}

@@ -4,7 +4,7 @@ import java.awt.Color;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.common.blocks.mana.AbstractManaFontBlock;
 import com.verdantartifice.primalmagick.common.tiles.mana.AbstractManaFontTileEntity;
@@ -26,7 +26,7 @@ import net.minecraft.world.level.block.Block;
  * @see {@link com.verdantartifice.primalmagick.common.blocks.mana.AncientManaFontBlock}
  */
 public class ManaFontTER implements BlockEntityRenderer<AbstractManaFontTileEntity> {
-    public static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "entity/mana_font_core");
+    public static final ResourceLocation TEXTURE = PrimalMagick.resource("entity/mana_font_core");
     
     public ManaFontTER(BlockEntityRendererProvider.Context context) {
     }
@@ -60,9 +60,9 @@ public class ManaFontTER implements BlockEntityRenderer<AbstractManaFontTileEnti
             
             matrixStack.pushPose();
             matrixStack.translate(0.5D, 0.5D, 0.5D);
-            matrixStack.mulPose(Vector3f.YP.rotationDegrees(rot));   // Spin the core around its Y-axis
-            matrixStack.mulPose(Vector3f.ZP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
-            matrixStack.mulPose(Vector3f.XP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
+            matrixStack.mulPose(Axis.YP.rotationDegrees(rot));   // Spin the core around its Y-axis
+            matrixStack.mulPose(Axis.ZP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
+            matrixStack.mulPose(Axis.XP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
             matrixStack.scale(scale, scale, scale);
             
             // Draw the south face of the core

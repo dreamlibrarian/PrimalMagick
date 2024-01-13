@@ -1,7 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:brick",
-  "set": {
-    "earth": 5
-  }
-}

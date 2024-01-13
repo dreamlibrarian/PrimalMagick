@@ -2,11 +2,12 @@ package com.verdantartifice.primalmagick.common.crafting;
 
 import com.verdantartifice.primalmagick.common.items.tools.AbstractTieredShieldItem;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.BannerItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
@@ -17,8 +18,8 @@ import net.minecraft.world.level.Level;
  * @author Daedalus4096
  */
 public class TieredShieldDecorationRecipe extends CustomRecipe {
-    public TieredShieldDecorationRecipe(ResourceLocation id) {
-        super(id);
+    public TieredShieldDecorationRecipe(CraftingBookCategory category) {
+        super(category);
     }
 
     @Override
@@ -47,7 +48,7 @@ public class TieredShieldDecorationRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer inv) {
+    public ItemStack assemble(CraftingContainer inv, RegistryAccess registryAccess) {
         ItemStack shieldStack = ItemStack.EMPTY;
         ItemStack bannerStack = ItemStack.EMPTY;
         

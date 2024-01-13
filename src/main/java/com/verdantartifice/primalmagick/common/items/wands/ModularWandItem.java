@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -19,21 +20,21 @@ import com.verdantartifice.primalmagick.common.wands.WandCore;
 import com.verdantartifice.primalmagick.common.wands.WandGem;
 
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.client.IItemRenderProperties;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 /**
  * Item definition for a modular wand.  Modular wands are made up of cores, caps, and gems, and their
@@ -94,6 +95,11 @@ public class ModularWandItem extends AbstractWandItem {
         
         return mod;
     }
+    
+    @Override
+    public boolean isGlamoured(ItemStack stack) {
+        return stack.hasTag() && (stack.getTag().contains("coreAppearance") || stack.getTag().contains("capAppearance") || stack.getTag().contains("gemAppearance"));
+    }
 
     @Nullable
     public WandCore getWandCore(@Nonnull ItemStack stack) {
@@ -106,6 +112,23 @@ public class ModularWandItem extends AbstractWandItem {
     
     public void setWandCore(@Nonnull ItemStack stack, @Nonnull WandCore core) {
         stack.addTagElement("core", StringTag.valueOf(core.getTag()));
+    }
+    
+    @Nullable
+    public WandCore getWandCoreAppearance(@Nonnull ItemStack stack) {
+        if (stack.hasTag() && stack.getTag().contains("coreAppearance")) {
+            return WandCore.getWandCore(stack.getTag().getString("coreAppearance"));
+        } else {
+            return this.getWandCore(stack);
+        }
+    }
+    
+    public void setWandCoreAppearance(@Nonnull ItemStack stack, @Nullable WandCore core) {
+        if (core == null) {
+            stack.removeTagKey("coreAppearance");
+        } else {
+            stack.addTagElement("coreAppearance", StringTag.valueOf(core.getTag()));
+        }
     }
     
     @Nullable 
@@ -121,6 +144,23 @@ public class ModularWandItem extends AbstractWandItem {
         stack.addTagElement("cap", StringTag.valueOf(cap.getTag()));
     }
     
+    @Nullable 
+    public WandCap getWandCapAppearance(@Nonnull ItemStack stack) {
+        if (stack.hasTag() && stack.getTag().contains("capAppearance")) {
+            return WandCap.getWandCap(stack.getTag().getString("capAppearance"));
+        } else {
+            return this.getWandCap(stack);
+        }
+    }
+    
+    public void setWandCapAppearance(@Nonnull ItemStack stack, @Nullable WandCap cap) {
+        if (cap == null) {
+            stack.removeTagKey("capAppearance");
+        } else {
+            stack.addTagElement("capAppearance", StringTag.valueOf(cap.getTag()));
+        }
+    }
+    
     @Nullable
     public WandGem getWandGem(@Nonnull ItemStack stack) {
         if (stack.hasTag() && stack.getTag().contains("gem")) {
@@ -134,6 +174,23 @@ public class ModularWandItem extends AbstractWandItem {
         stack.addTagElement("gem", StringTag.valueOf(gem.getTag()));
     }
     
+    @Nullable
+    public WandGem getWandGemAppearance(@Nonnull ItemStack stack) {
+        if (stack.hasTag() && stack.getTag().contains("gemAppearance")) {
+            return WandGem.getWandGem(stack.getTag().getString("gemAppearance"));
+        } else {
+            return this.getWandGem(stack);
+        }
+    }
+    
+    public void setWandGemAppearance(@Nonnull ItemStack stack, @Nullable WandGem gem) {
+        if (gem == null) {
+            stack.removeTagKey("gemAppearance");
+        } else {
+            stack.addTagElement("gemAppearance", StringTag.valueOf(gem.getTag()));
+        }
+    }
+    
     @Nonnull
     protected List<IWandComponent> getComponents(@Nonnull ItemStack stack) {
         return Arrays.asList(this.getWandCore(stack), this.getWandCap(stack), this.getWandGem(stack)).stream().filter(Objects::nonNull).collect(Collectors.toList());
@@ -143,12 +200,12 @@ public class ModularWandItem extends AbstractWandItem {
     public Component getName(ItemStack stack) {
         // A modular wand's display name is determined by its components (e.g. "Apprentice's Iron-Shod Heartwood Wand")
         WandCore core = this.getWandCore(stack);
-        Component coreName = (core == null) ? new TranslatableComponent("primalmagick.wand_core.unknown.name") : new TranslatableComponent(core.getNameTranslationKey());
+        Component coreName = (core == null) ? Component.translatable("wand_core.primalmagick.unknown") : Component.translatable(core.getNameTranslationKey());
         WandCap cap = this.getWandCap(stack);
-        Component capName = (cap == null) ? new TranslatableComponent("primalmagick.wand_cap.unknown.name") : new TranslatableComponent(cap.getNameTranslationKey());
+        Component capName = (cap == null) ? Component.translatable("wand_cap.primalmagick.unknown") : Component.translatable(cap.getNameTranslationKey());
         WandGem gem = this.getWandGem(stack);
-        Component gemName = (gem == null) ? new TranslatableComponent("primalmagick.wand_gem.unknown.name") : new TranslatableComponent(gem.getNameTranslationKey());
-        return new TranslatableComponent("item.primalmagick.modular_wand", gemName, capName, coreName);
+        Component gemName = (gem == null) ? Component.translatable("wand_gem.primalmagick.unknown") : Component.translatable(gem.getNameTranslationKey());
+        return Component.translatable("item.primalmagick.modular_wand", gemName, capName, coreName);
     }
     
     @Override
@@ -191,26 +248,25 @@ public class ModularWandItem extends AbstractWandItem {
     }
     
     @Override
-    public int getItemEnchantability(ItemStack stack) {
+    public int getEnchantmentValue(ItemStack stack) {
         // The enchantability of a wand is determined by its components
         return this.getComponents(stack).stream().mapToInt(IWandComponent::getEnchantability).sum();
     }
     
-    @Override
-    public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items) {
-        // Populate the creative pane with a NBT-complete modular wand(s)
-        if (this.allowdedIn(group)) {
-            ItemStack stack = new ItemStack(this);
-            this.setWandCore(stack, WandCore.HEARTWOOD);
-            this.setWandCap(stack, WandCap.IRON);
-            this.setWandGem(stack, WandGem.APPRENTICE);
-            items.add(stack);
+    public static void registerCreativeTabItems(CreativeModeTab.ItemDisplayParameters params, CreativeModeTab.Output output, Supplier<? extends ItemLike> itemSupplier) {
+        Item item = itemSupplier.get().asItem();
+        if (item instanceof ModularWandItem wandItem) {
+            ItemStack stack = new ItemStack(wandItem);
+            wandItem.setWandCore(stack, WandCore.HEARTWOOD);
+            wandItem.setWandCap(stack, WandCap.IRON);
+            wandItem.setWandGem(stack, WandGem.APPRENTICE);
+            output.accept(stack);
             
-            stack = new ItemStack(this);
-            this.setWandCore(stack, WandCore.HEARTWOOD);
-            this.setWandCap(stack, WandCap.IRON);
-            this.setWandGem(stack, WandGem.CREATIVE);
-            items.add(stack);
+            stack = new ItemStack(wandItem);
+            wandItem.setWandCore(stack, WandCore.HEARTWOOD);
+            wandItem.setWandCap(stack, WandCap.IRON);
+            wandItem.setWandGem(stack, WandGem.CREATIVE);
+            output.accept(stack);
         }
     }
     
@@ -266,19 +322,19 @@ public class ModularWandItem extends AbstractWandItem {
     @Override
     public Component getSpellCapacityText(ItemStack stack) {
         if (stack == null) {
-            return new TranslatableComponent("primalmagick.spells.capacity", 0);
+            return Component.translatable("tooltip.primalmagick.spells.capacity", 0);
         } else {
             WandCore core = this.getWandCore(stack);
             if (core == null) {
-                return new TranslatableComponent("primalmagick.spells.capacity", 0);
+                return Component.translatable("tooltip.primalmagick.spells.capacity", 0);
             } else {
                 int baseSlots = this.getCoreSpellSlotCount(core);
                 Source bonusSlot = core.getBonusSlot();
                 if (bonusSlot == null) {
-                    return new TranslatableComponent("primalmagick.spells.capacity", baseSlots);
+                    return Component.translatable("tooltip.primalmagick.spells.capacity", baseSlots);
                 } else {
-                    Component bonusText = new TranslatableComponent(bonusSlot.getNameTranslationKey());
-                    return new TranslatableComponent("primalmagick.spells.capacity_with_bonus", baseSlots, bonusText);
+                    Component bonusText = Component.translatable(bonusSlot.getNameTranslationKey());
+                    return Component.translatable("tooltip.primalmagick.spells.capacity_with_bonus", baseSlots, bonusText);
                 }
             }
         }
@@ -372,12 +428,12 @@ public class ModularWandItem extends AbstractWandItem {
     }
 
     @Override
-    public void initializeClient(Consumer<IItemRenderProperties> consumer) {
-        consumer.accept(new IItemRenderProperties() {
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
             final BlockEntityWithoutLevelRenderer renderer = new ModularWandISTER();
 
             @Override
-            public BlockEntityWithoutLevelRenderer getItemStackRenderer() {
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
                 return renderer;
             }
         });

@@ -3,18 +3,17 @@ package com.verdantartifice.primalmagick.common.spells.mods;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import javax.annotation.Nonnull;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 import com.verdantartifice.primalmagick.common.spells.SpellProperty;
 import com.verdantartifice.primalmagick.common.util.VectorUtils;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
@@ -28,7 +27,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class ForkSpellMod extends AbstractSpellMod {
     public static final String TYPE = "fork";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_MOD_FORK"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_MOD_FORK.get().compoundKey();
 
     public ForkSpellMod() {
         super();
@@ -47,8 +46,8 @@ public class ForkSpellMod extends AbstractSpellMod {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("forks", new SpellProperty("forks", "primalmagick.spell.property.forks", 2, 5));
-        propMap.put("precision", new SpellProperty("precision", "primalmagick.spell.property.precision", 0, 5));
+        propMap.put("forks", new SpellProperty("forks", "spells.primalmagick.property.forks", 2, 5));
+        propMap.put("precision", new SpellProperty("precision", "spells.primalmagick.property.precision", 0, 5));
         return propMap;
     }
 
@@ -70,7 +69,7 @@ public class ForkSpellMod extends AbstractSpellMod {
     }
     
     @Nonnull
-    public List<Vec3> getDirectionUnitVectors(@Nonnull Vec3 dir, @Nonnull Random rng) {
+    public List<Vec3> getDirectionUnitVectors(@Nonnull Vec3 dir, @Nonnull RandomSource rng) {
         // Determine the direction vectors on which to execute the spell forks
         List<Vec3> retVal = new ArrayList<>();
         Vec3 normDir = dir.normalize();
@@ -102,6 +101,6 @@ public class ForkSpellMod extends AbstractSpellMod {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.mod.detail_tooltip." + this.getModType(), this.getForkCount(), this.getSpreadDegreesText());
+        return Component.translatable("spells.primalmagick.mod." + this.getModType() + ".detail_tooltip", this.getForkCount(), this.getSpreadDegreesText());
     }
 }

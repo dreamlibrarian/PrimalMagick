@@ -3,7 +3,7 @@ package com.verdantartifice.primalmagick.common.spells.payloads;
 import java.util.Map;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.sounds.SoundsPM;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
@@ -11,7 +11,6 @@ import com.verdantartifice.primalmagick.common.spells.SpellProperty;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -30,7 +29,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class SolarDamageSpellPayload extends AbstractDamageSpellPayload {
     public static final String TYPE = "solar_damage";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_PAYLOAD_SOLAR"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_PAYLOAD_SOLAR.get().compoundKey();
 
     public SolarDamageSpellPayload() {
         super();
@@ -48,7 +47,7 @@ public class SolarDamageSpellPayload extends AbstractDamageSpellPayload {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("duration", new SpellProperty("duration", "primalmagick.spell.property.duration", 0, 5));
+        propMap.put("duration", new SpellProperty("duration", "spells.primalmagick.property.duration", 0, 5));
         return propMap;
     }
 
@@ -96,7 +95,7 @@ public class SolarDamageSpellPayload extends AbstractDamageSpellPayload {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.payload.detail_tooltip." + this.getPayloadType(), DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)),
+        return Component.translatable("spells.primalmagick.payload." + this.getPayloadType() + ".detail_tooltip", DECIMAL_FORMATTER.format(this.getBaseDamage(spell, spellSource)),
                 DECIMAL_FORMATTER.format(this.getDurationSeconds(spell, spellSource)));
     }
 }

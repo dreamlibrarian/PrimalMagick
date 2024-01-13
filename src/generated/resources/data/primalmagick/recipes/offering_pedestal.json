@@ -1,0 +1,21 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "P": {
+      "item": "primalmagick:marble_pillar"
+    },
+    "S": {
+      "item": "primalmagick:marble_slab"
+    }
+  },
+  "pattern": [
+    "S",
+    "P",
+    "S"
+  ],
+  "research": "BASIC_RITUAL",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:offering_pedestal"
+  }
+}

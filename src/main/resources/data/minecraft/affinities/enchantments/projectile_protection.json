@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:projectile_protection",
-  "multiplier": {
-    "sky": 1
-  }
-}

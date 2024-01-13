@@ -9,11 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -23,7 +22,7 @@ import net.minecraft.world.item.ItemStack;
  * @see {@link com.verdantartifice.primalmagick.common.items.wands.MundaneWandItem}
  */
 public class MundaneWandISTER extends BlockEntityWithoutLevelRenderer {
-    private static final ModelResourceLocation CORE_MRL = new ModelResourceLocation(new ResourceLocation(PrimalMagick.MODID, "mundane_wand_core"), "");
+    private static final ModelResourceLocation CORE_MRL = new ModelResourceLocation(PrimalMagick.resource("mundane_wand_core"), "");
     
     public MundaneWandISTER() {
         super(Minecraft.getInstance() == null ? null : Minecraft.getInstance().getBlockEntityRenderDispatcher(), 
@@ -31,7 +30,7 @@ public class MundaneWandISTER extends BlockEntityWithoutLevelRenderer {
     }
     
     @Override
-    public void renderByItem(ItemStack itemStack, ItemTransforms.TransformType transformType, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
+    public void renderByItem(ItemStack itemStack, ItemDisplayContext transformType, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
         if (itemStack.getItem() instanceof MundaneWandItem) {
             Minecraft mc = Minecraft.getInstance();
             ItemRenderer itemRenderer = mc.getItemRenderer();

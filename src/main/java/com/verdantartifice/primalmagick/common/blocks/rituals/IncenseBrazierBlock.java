@@ -1,7 +1,6 @@
 package com.verdantartifice.primalmagick.common.blocks.rituals;
 
 import java.awt.Color;
-import java.util.Random;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
@@ -12,9 +11,9 @@ import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -30,7 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -43,10 +42,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  */
 public class IncenseBrazierBlock extends BaseEntityBlock implements IRitualPropBlock {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
-    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/incense_brazier"));
+    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(PrimalMagick.resource("block/incense_brazier"));
 
     public IncenseBrazierBlock() {
-        super(Block.Properties.of(Material.METAL).strength(1.5F, 6.0F).sound(SoundType.METAL).lightLevel((state) -> { 
+        super(Block.Properties.of().mapColor(MapColor.METAL).strength(1.5F, 6.0F).sound(SoundType.METAL).lightLevel((state) -> { 
             return state.getValue(BlockStateProperties.LIT) ? 7 : 0; 
         }));
         this.registerDefaultState(this.defaultBlockState().setValue(LIT, Boolean.FALSE));
@@ -69,7 +68,7 @@ public class IncenseBrazierBlock extends BaseEntityBlock implements IRitualPropB
     }
     
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show flame particles if lit
         if (stateIn.getValue(LIT)) {
             double x = pos.getX() + 0.5D;
@@ -89,7 +88,7 @@ public class IncenseBrazierBlock extends BaseEntityBlock implements IRitualPropB
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         if (player != null && player.getItemInHand(handIn).getItem() == ItemsPM.INCENSE_STICK.get() && !state.getValue(LIT)) {
             // If using an incense stick on an unlit brazier, light it
-            worldIn.playSound(player, pos, SoundEvents.GRASS_PLACE, SoundSource.BLOCKS, 1.0F, 0.8F + (RANDOM.nextFloat() * 0.4F));
+            worldIn.playSound(player, pos, SoundEvents.GRASS_PLACE, SoundSource.BLOCKS, 1.0F, 0.8F + (worldIn.random.nextFloat() * 0.4F));
             if (!worldIn.isClientSide) {
                 worldIn.setBlock(pos, state.setValue(LIT, Boolean.TRUE), Block.UPDATE_ALL_IMMEDIATE);
                 if (!player.getAbilities().instabuild) {
@@ -144,16 +143,12 @@ public class IncenseBrazierBlock extends BaseEntityBlock implements IRitualPropB
 
     @Override
     public boolean isPropActivated(BlockState state, Level world, BlockPos pos) {
-        if (state != null && state.getBlock() instanceof RitualCandleBlock) {
-            return state.getValue(LIT);
-        } else {
-            return false;
-        }
+        return state != null && state.hasProperty(LIT) && state.getValue(LIT);
     }
 
     @Override
     public String getPropTranslationKey() {
-        return "primalmagick.ritual.prop.incense_brazier";
+        return "ritual.primalmagick.prop.incense_brazier";
     }
 
     public float getUsageStabilityBonus() {

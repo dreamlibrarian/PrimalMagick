@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "primalmagick:reverberation",
-  "multiplier": {
-    "earth": 1
-  }
-}

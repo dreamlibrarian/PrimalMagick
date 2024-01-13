@@ -19,7 +19,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -70,6 +69,7 @@ public abstract class AbstractConjureFluidSpellPayload extends AbstractSpellPayl
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected ItemStack getSimulatedItemStack(@Nonnull Fluid fluid) {
         if (fluid.is(FluidTags.WATER)) {
             return new ItemStack(Items.WATER_BUCKET);
@@ -80,22 +80,22 @@ public abstract class AbstractConjureFluidSpellPayload extends AbstractSpellPayl
         }
     }
 
+    @SuppressWarnings("deprecation")
     protected void placeFluid(Player player, Level world, BlockPos pos, BlockHitResult blockTarget) {
         BlockState state = world.getBlockState(pos);
         Block block = state.getBlock();
-        Material material = state.getMaterial();
-        boolean isSolid = material.isSolid();
-        boolean isReplaceable = material.isReplaceable();
-        if (world.isEmptyBlock(pos) || !isSolid || isReplaceable || (block instanceof LiquidBlockContainer && ((LiquidBlockContainer)block).canPlaceLiquid(world, pos, state, this.fluid))) {
+        boolean isSolid = state.isSolid();
+        boolean isReplaceable = state.canBeReplaced();
+        if (world.isEmptyBlock(pos) || !isSolid || isReplaceable || (block instanceof LiquidBlockContainer lbc && lbc.canPlaceLiquid(player, world, pos, state, this.fluid))) {
             if (world.dimensionType().ultraWarm() && this.fluid.is(FluidTags.WATER)) {
                 // Do nothing for water in the Nether or similar dimensions
                 return;
-            } else if (block instanceof LiquidBlockContainer && this.fluid == Fluids.WATER) {
+            } else if (block instanceof LiquidBlockContainer lbc && this.fluid == Fluids.WATER) {
                 // If the block is a liquid container and we're dealing with water, place the water into the container
-                ((LiquidBlockContainer)block).placeLiquid(world, pos, state, this.fluid.getSource(false));
+                lbc.placeLiquid(world, pos, state, this.fluid.getSource(false));
             } else {
                 // Destroy the existing block at the target location if fluid would replace it
-                if (!world.isClientSide && (!isSolid || isReplaceable) && !material.isLiquid()) {
+                if (!world.isClientSide && (!isSolid || isReplaceable) && !state.liquid()) {
                     world.destroyBlock(pos, true);
                 }
                 

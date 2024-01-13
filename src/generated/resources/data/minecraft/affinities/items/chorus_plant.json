@@ -1,0 +1,9 @@
+{
+  "type": "item",
+  "set": {
+    "earth": 5,
+    "moon": 5,
+    "void": 5
+  },
+  "target": "minecraft:chorus_plant"
+}

@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:oak_slab",
-  "set": {
-    "earth": 1,
-    "sun": 1
-  }
-}

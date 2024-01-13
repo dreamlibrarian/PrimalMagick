@@ -1,8 +1,0 @@
-{
-  "type": "entity_type",
-  "target": "minecraft:goat",
-  "values": {
-    "sky": 5,
-    "blood": 10
-  }
-}

@@ -2,13 +2,11 @@ package com.verdantartifice.primalmagick.common.items.misc;
 
 import java.util.List;
 
-import com.verdantartifice.primalmagick.PrimalMagick;
-import com.verdantartifice.primalmagick.common.capabilities.IPlayerKnowledge.KnowledgeType;
+import com.verdantartifice.primalmagick.common.research.KnowledgeType;
 import com.verdantartifice.primalmagick.common.research.ResearchManager;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -27,7 +25,7 @@ public class DreamVisionTalismanItem extends Item {
     protected static final int CAPACITY = 64;
     
     public DreamVisionTalismanItem() {
-        super(new Item.Properties().tab(PrimalMagick.ITEM_GROUP).durability(64));
+        super(new Item.Properties().durability(64));
     }
     
     /**
@@ -120,11 +118,12 @@ public class DreamVisionTalismanItem extends Item {
      * @return whether the talisman was successfully drained
      */
     public boolean doDrain(ItemStack stack, Player player) {
-        if (!player.level.isClientSide && this.isReadyToDrain(stack)) {
+        Level level = player.level();
+        if (!level.isClientSide && this.isReadyToDrain(stack)) {
             if (ResearchManager.addKnowledge(player, KnowledgeType.OBSERVATION, KnowledgeType.OBSERVATION.getProgression())) {
                 this.setStoredExp(stack, 0);
                 stack.hurtAndBreak(1, player, p -> {
-                    p.displayClientMessage(new TranslatableComponent("event.primalmagick.dream_vision_talisman.break").withStyle(ChatFormatting.RED), false);
+                    p.displayClientMessage(Component.translatable("event.primalmagick.dream_vision_talisman.break").withStyle(ChatFormatting.RED), false);
                 });
                 return true;
             }
@@ -135,11 +134,11 @@ public class DreamVisionTalismanItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flagIn) {
         super.appendHoverText(stack, level, tooltip, flagIn);
-        tooltip.add(new TranslatableComponent("tooltip.primalmagick.dream_vision_talisman.exp", this.getStoredExp(stack), this.getExpCapacity(stack)));
+        tooltip.add(Component.translatable("tooltip.primalmagick.dream_vision_talisman.exp", this.getStoredExp(stack), this.getExpCapacity(stack)));
         if (this.isActive(stack)) {
-            tooltip.add(new TranslatableComponent("tooltip.primalmagick.dream_vision_talisman.active").withStyle(ChatFormatting.GREEN));
+            tooltip.add(Component.translatable("tooltip.primalmagick.active").withStyle(ChatFormatting.GREEN));
         } else {
-            tooltip.add(new TranslatableComponent("tooltip.primalmagick.dream_vision_talisman.inactive").withStyle(ChatFormatting.RED));
+            tooltip.add(Component.translatable("tooltip.primalmagick.inactive").withStyle(ChatFormatting.RED));
         }
     }
 
@@ -154,9 +153,9 @@ public class DreamVisionTalismanItem extends Item {
         boolean active = this.isActive(stack);
         if (level.isClientSide) {
             if (active) {
-                player.displayClientMessage(new TranslatableComponent("event.primalmagick.dream_vision_talisman.set_inactive"), false);
+                player.displayClientMessage(Component.translatable("event.primalmagick.dream_vision_talisman.set_inactive"), false);
             } else {
-                player.displayClientMessage(new TranslatableComponent("event.primalmagick.dream_vision_talisman.set_active"), false);
+                player.displayClientMessage(Component.translatable("event.primalmagick.dream_vision_talisman.set_active"), false);
             }
         }
         this.setActive(stack, !active);

@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:furnace",
-  "set": {
-    "earth": 30,
-    "infernal": 5
-  }
-}

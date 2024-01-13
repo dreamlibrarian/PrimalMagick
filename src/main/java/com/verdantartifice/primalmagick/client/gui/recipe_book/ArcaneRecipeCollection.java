@@ -9,37 +9,41 @@ import com.google.common.collect.ImmutableList;
 import com.verdantartifice.primalmagick.common.crafting.recipe_book.ArcaneRecipeBook;
 
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.stats.RecipeBook;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 public class ArcaneRecipeCollection {
-    protected final List<Recipe<?>> recipes;
+    protected final RegistryAccess registryAccess;
+    protected final List<RecipeHolder<?>> recipes;
     protected final boolean singleResultItem;
-    protected final Set<Recipe<?>> craftable = new HashSet<>();
-    protected final Set<Recipe<?>> fitsDimensions = new HashSet<>();
-    protected final Set<Recipe<?>> known = new HashSet<>();
+    protected final Set<RecipeHolder<?>> craftable = new HashSet<>();
+    protected final Set<RecipeHolder<?>> fitsDimensions = new HashSet<>();
+    protected final Set<RecipeHolder<?>> known = new HashSet<>();
     
-    public ArcaneRecipeCollection(List<Recipe<?>> recipes) {
+    public ArcaneRecipeCollection(RegistryAccess registryAccess, List<RecipeHolder<?>> recipes) {
+        this.registryAccess = registryAccess;
         this.recipes = ImmutableList.copyOf(recipes);
         if (recipes.size() <= 1) {
             this.singleResultItem = true;
         } else {
-            this.singleResultItem = allRecipesHaveSameResult(recipes);
+            this.singleResultItem = allRecipesHaveSameResult(registryAccess, recipes);
         }
     }
     
     public ArcaneRecipeCollection(RecipeCollection vanillaCollection) {
+        this.registryAccess = vanillaCollection.registryAccess();
         this.recipes = ImmutableList.copyOf(vanillaCollection.getRecipes());
         this.singleResultItem = vanillaCollection.hasSingleResultItem();
     }
     
-    protected static boolean allRecipesHaveSameResult(List<Recipe<?>> recipes) {
-        ItemStack referenceStack = recipes.get(0).getResultItem();
-        for (int index = 1; index < recipes.size(); index++) {
-            ItemStack stack = recipes.get(index).getResultItem();
-            if (!ItemStack.isSame(referenceStack, stack) || !ItemStack.tagMatches(referenceStack, stack)) {
+    protected static boolean allRecipesHaveSameResult(RegistryAccess registryAccess, List<RecipeHolder<?>> recipeHolders) {
+        ItemStack referenceStack = recipeHolders.get(0).value().getResultItem(registryAccess);
+        for (int index = 1; index < recipeHolders.size(); index++) {
+            ItemStack stack = recipeHolders.get(index).value().getResultItem(registryAccess);
+            if (!ItemStack.isSameItemSameTags(referenceStack, stack)) {
                 return false;
             }
         }
@@ -51,7 +55,7 @@ public class ArcaneRecipeCollection {
     }
     
     public void updateKnownRecipes(RecipeBook vanillaBook, ArcaneRecipeBook arcaneBook) {
-        for (Recipe<?> recipe : this.recipes) {
+        for (RecipeHolder<?> recipe : this.recipes) {
             if (vanillaBook.contains(recipe) || arcaneBook.contains(recipe)) {
                 this.known.add(recipe);
             }
@@ -59,14 +63,14 @@ public class ArcaneRecipeCollection {
     }
     
     public void canCraft(StackedContents contents, int gridWidth, int gridHeight, RecipeBook vanillaBook, ArcaneRecipeBook arcaneBook) {
-        for (Recipe<?> recipe : this.recipes) {
-            boolean flag = recipe.canCraftInDimensions(gridWidth, gridHeight) && (vanillaBook.contains(recipe) || arcaneBook.contains(recipe));
+        for (RecipeHolder<?> recipe : this.recipes) {
+            boolean flag = recipe.value().canCraftInDimensions(gridWidth, gridHeight) && (vanillaBook.contains(recipe) || arcaneBook.contains(recipe));
             if (flag) {
                 this.fitsDimensions.add(recipe);
             } else {
                 this.fitsDimensions.remove(recipe);
             }
-            if (flag && contents.canCraft(recipe, null)) {
+            if (flag && contents.canCraft(recipe.value(), null)) {
                 this.craftable.add(recipe);
             } else {
                 this.craftable.remove(recipe);
@@ -74,7 +78,7 @@ public class ArcaneRecipeCollection {
         }
     }
     
-    public boolean isCraftable(Recipe<?> recipe) {
+    public boolean isCraftable(RecipeHolder<?> recipe) {
         return this.craftable.contains(recipe);
     }
     
@@ -86,15 +90,19 @@ public class ArcaneRecipeCollection {
         return !this.fitsDimensions.isEmpty();
     }
     
-    public List<Recipe<?>> getRecipes() {
+    public List<RecipeHolder<?>> getRecipes() {
         return this.recipes;
     }
     
-    public List<Recipe<?>> getRecipes(boolean isCraftable) {
-        List<Recipe<?>> retVal = new ArrayList<>();
-        Set<Recipe<?>> set = isCraftable ? this.craftable : this.fitsDimensions;
+    public RegistryAccess registryAccess() {
+        return this.registryAccess;
+    }
+    
+    public List<RecipeHolder<?>> getRecipes(boolean isCraftable) {
+        List<RecipeHolder<?>> retVal = new ArrayList<>();
+        Set<RecipeHolder<?>> set = isCraftable ? this.craftable : this.fitsDimensions;
         
-        for (Recipe<?> recipe : this.recipes) {
+        for (RecipeHolder<?> recipe : this.recipes) {
             if (set.contains(recipe)) {
                 retVal.add(recipe);
             }
@@ -103,9 +111,9 @@ public class ArcaneRecipeCollection {
         return retVal;
     }
     
-    public List<Recipe<?>> getDisplayRecipes(boolean isCraftable) {
-        List<Recipe<?>> retVal = new ArrayList<>();
-        for (Recipe<?> recipe : this.recipes) {
+    public List<RecipeHolder<?>> getDisplayRecipes(boolean isCraftable) {
+        List<RecipeHolder<?>> retVal = new ArrayList<>();
+        for (RecipeHolder<?> recipe : this.recipes) {
             if (this.fitsDimensions.contains(recipe) && this.craftable.contains(recipe) == isCraftable) {
                 retVal.add(recipe);
             }

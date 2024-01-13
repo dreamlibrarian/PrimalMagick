@@ -1,7 +1,5 @@
 package com.verdantartifice.primalmagick.common.entities.misc;
 
-import java.util.List;
-
 import com.verdantartifice.primalmagick.common.entities.EntityTypesPM;
 import com.verdantartifice.primalmagick.common.items.ItemsPM;
 import com.verdantartifice.primalmagick.common.items.entities.FlyingCarpetItem;
@@ -11,13 +9,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -25,10 +23,11 @@ import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Definition of a flying carpet entity, a vehicle that can be used by players to soar through the sky.
@@ -37,6 +36,7 @@ import net.minecraftforge.network.NetworkHooks;
  */
 public class FlyingCarpetEntity extends Entity {
     protected static final EntityDataAccessor<Integer> DYE_COLOR = SynchedEntityData.defineId(FlyingCarpetEntity.class, EntityDataSerializers.INT);
+    protected static final EntityDataAccessor<Float> DAMAGE = SynchedEntityData.defineId(FlyingCarpetEntity.class, EntityDataSerializers.FLOAT);
 
     private float momentum;
     private int lerpSteps;
@@ -70,6 +70,7 @@ public class FlyingCarpetEntity extends Entity {
     @Override
     protected void defineSynchedData() {
         this.entityData.define(DYE_COLOR, -1);
+        this.entityData.define(DAMAGE, 0.0F);
     }
 
     @Override
@@ -80,11 +81,6 @@ public class FlyingCarpetEntity extends Entity {
     @Override
     protected void addAdditionalSaveData(CompoundTag compound) {
         // Nothing to do
-    }
-
-    @Override
-    public Packet<?> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 
     @Override
@@ -108,17 +104,12 @@ public class FlyingCarpetEntity extends Entity {
     }
 
     @Override
-    public double getPassengersRidingOffset() {
-        return -0.1D;
-    }
-
-    @Override
     public boolean isPickable() {
         return this.isAlive();
     }
 
     @Override
-    public void lerpTo(double x, double y, double z, float yaw, float pitch, int posRotationIncrements, boolean teleport) {
+    public void lerpTo(double x, double y, double z, float yaw, float pitch, int posRotationIncrements) {
         this.lerpX = x;
         this.lerpY = y;
         this.lerpZ = z;
@@ -137,18 +128,24 @@ public class FlyingCarpetEntity extends Entity {
         this.xo = this.getX();
         this.yo = this.getY();
         this.zo = this.getZ();
+        
+        if (this.getDamage() > 0.0F) {
+            this.setDamage(this.getDamage() - 1.0F);
+        }
+        
         super.tick();
         this.tickLerp();
         
+        Level level = this.level();
         if (this.isVehicle() && this.isControlledByLocalInstance()) {
             this.updateMotion();
-            if (this.level.isClientSide) {
+            if (level.isClientSide) {
                 this.controlCarpet();
             }
             this.move(MoverType.SELF, this.getDeltaMovement());
         } else {
             this.setDeltaMovement(Vec3.ZERO);
-            if (this.level.isClientSide) {
+            if (level.isClientSide) {
                 this.updateInputs(false, false);
             }
         }
@@ -159,7 +156,7 @@ public class FlyingCarpetEntity extends Entity {
     private void tickLerp() {
         if (this.isControlledByLocalInstance()) {
             this.lerpSteps = 0;
-            this.setPacketCoordinates(this.getX(), this.getY(), this.getZ());
+            this.syncPacketPositionCodec(this.getX(), this.getY(), this.getZ());
         }
         if (this.lerpSteps > 0) {
             double newX = this.getX() + ((this.lerpX - this.getX()) / (double)this.lerpSteps);
@@ -224,14 +221,10 @@ public class FlyingCarpetEntity extends Entity {
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
-        if (!this.level.isClientSide && this.isAlive()) {
+        Level level = this.level();
+        if (!level.isClientSide && this.isAlive()) {
             if (player.isSecondaryUseActive()) {
-                ItemStack stack = new ItemStack(ItemsPM.FLYING_CARPET.get());
-                DyeColor color = this.getDyeColor();
-                if (color != null) {
-                    ((FlyingCarpetItem)stack.getItem()).setDyeColor(stack, color);
-                }
-                this.spawnAtLocation(stack, 0.0F);
+                this.spawnAtLocation(this.getDropItem(), 0.0F);
                 this.discard();
                 return InteractionResult.SUCCESS;
             } else {
@@ -240,6 +233,37 @@ public class FlyingCarpetEntity extends Entity {
             }
         }
         return InteractionResult.PASS;
+    }
+    
+    @Override
+    public boolean hurt(DamageSource pSource, float pAmount) {
+        Level level = this.level();
+        if (this.isInvulnerableTo(pSource)) {
+            return false;
+        } else if (!level.isClientSide && !this.isRemoved()) {
+            this.setDamage(this.getDamage() + pAmount * 10.0F);
+            this.markHurt();
+            this.gameEvent(GameEvent.ENTITY_DAMAGE, pSource.getEntity());
+            boolean flag = pSource.getEntity() instanceof Player player && player.getAbilities().instabuild;
+            if (flag || this.getDamage() > 40F) {
+                if (level.getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS)) {
+                    this.spawnAtLocation(this.getDropItem(), 0.0F);
+                }
+                this.discard();
+            }
+            return true;
+        } else {
+            return true;
+        }
+    }
+
+    protected ItemStack getDropItem() {
+        ItemStack stack = new ItemStack(ItemsPM.FLYING_CARPET.get());
+        DyeColor color = this.getDyeColor();
+        if (color != null) {
+            ((FlyingCarpetItem)stack.getItem()).setDyeColor(stack, color);
+        }
+        return stack;
     }
     
     public DyeColor getDyeColor() {
@@ -258,6 +282,14 @@ public class FlyingCarpetEntity extends Entity {
             this.entityData.set(DYE_COLOR, Integer.valueOf(color.getId()));
         }
     }
+    
+    public void setDamage(float damageTaken) {
+        this.entityData.set(DAMAGE, damageTaken);
+    }
+    
+    public float getDamage() {
+        return this.entityData.get(DAMAGE);
+    }
 
     @Override
     protected void checkFallDamage(double y, boolean onGroundIn, BlockState state, BlockPos pos) {
@@ -269,9 +301,13 @@ public class FlyingCarpetEntity extends Entity {
     }
 
     @Override
-    public Entity getControllingPassenger() {
-        List<Entity> list = this.getPassengers();
-        return list.isEmpty() ? null : list.get(0);
+    public LivingEntity getControllingPassenger() {
+        Entity entity = this.getFirstPassenger();
+        if (entity instanceof LivingEntity living) {
+            return living;
+        } else {
+            return null;
+        }
     }
 
     @Override

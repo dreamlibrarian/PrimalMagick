@@ -30,7 +30,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.client.IItemRenderProperties;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 /**
  * Item definition for an arcanometer.  An arcanometer is a PKE meter-like device that scans the 
@@ -39,10 +39,10 @@ import net.minecraftforge.client.IItemRenderProperties;
  * @author Daedalus4096
  */
 public class ArcanometerItem extends Item {
-    public static final ResourceLocation SCAN_STATE_PROPERTY = new ResourceLocation(PrimalMagick.MODID, "scan_state");
+    public static final ResourceLocation SCAN_STATE_PROPERTY = PrimalMagick.resource("scan_state");
 
     public ArcanometerItem() {
-        super(new Item.Properties().tab(PrimalMagick.ITEM_GROUP).stacksTo(1).rarity(Rarity.UNCOMMON));
+        super(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
     }
     
     public static boolean isMouseOverScannable(@Nullable HitResult result, @Nullable Level world, @Nullable Player player) {
@@ -92,12 +92,12 @@ public class ArcanometerItem extends Item {
     }
 
     @Override
-    public void initializeClient(Consumer<IItemRenderProperties> consumer) {
-        consumer.accept(new IItemRenderProperties() {
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
             final BlockEntityWithoutLevelRenderer renderer = new ArcanometerISTER();
 
             @Override
-            public BlockEntityWithoutLevelRenderer getItemStackRenderer() {
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
                 return renderer;
             }
         });

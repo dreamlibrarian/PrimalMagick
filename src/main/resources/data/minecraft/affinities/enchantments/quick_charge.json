@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:quick_charge",
-  "multiplier": {
-    "sky": 1
-  }
-}

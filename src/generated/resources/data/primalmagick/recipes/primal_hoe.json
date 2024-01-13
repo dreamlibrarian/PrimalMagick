@@ -1,0 +1,51 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "primalmagick:primalite_hoe"
+    },
+    {
+      "item": "primalmagick:essence_shard_sun"
+    },
+    {
+      "item": "primalmagick:essence_shard_sun"
+    },
+    {
+      "item": "primalmagick:rune_sun"
+    },
+    {
+      "item": "primalmagick:mana_prism"
+    },
+    {
+      "item": "primalmagick:mana_salts"
+    }
+  ],
+  "instability": 3,
+  "mana": {
+    "sources": {
+      "sun": 40
+    }
+  },
+  "props": [
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "block": "primalmagick:incense_brazier"
+    }
+  ],
+  "research": "PRIMAL_HOE",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:primal_hoe",
+    "tag": {
+      "Damage": 0,
+      "Enchantments": [
+        {
+          "id": "primalmagick:verdant",
+          "lvl": 2
+        }
+      ]
+    }
+  }
+}

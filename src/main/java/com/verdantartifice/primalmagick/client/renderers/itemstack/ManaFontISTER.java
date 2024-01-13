@@ -4,7 +4,7 @@ import java.awt.Color;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.renderers.tile.ManaFontTER;
 import com.verdantartifice.primalmagick.common.blocks.mana.AbstractManaFontBlock;
@@ -14,15 +14,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -32,10 +31,10 @@ import net.minecraft.world.item.ItemStack;
  * @see {@link com.verdantartifice.primalmagick.common.blocks.mana.AbstractManaFontBlock}
  */
 public class ManaFontISTER extends BlockEntityWithoutLevelRenderer {
-    private static final ModelResourceLocation MRL_BASIC = new ModelResourceLocation(new ResourceLocation(PrimalMagick.MODID, "ancient_font_earth"), "");
-    private static final ModelResourceLocation MRL_ENCHANTED = new ModelResourceLocation(new ResourceLocation(PrimalMagick.MODID, "artificial_font_earth"), "");
-    private static final ModelResourceLocation MRL_FORBIDDEN = new ModelResourceLocation(new ResourceLocation(PrimalMagick.MODID, "forbidden_font_earth"), "");
-    private static final ModelResourceLocation MRL_HEAVENLY = new ModelResourceLocation(new ResourceLocation(PrimalMagick.MODID, "heavenly_font_earth"), "");
+    private static final ModelResourceLocation MRL_BASIC = new ModelResourceLocation(PrimalMagick.resource("ancient_font_earth"), "");
+    private static final ModelResourceLocation MRL_ENCHANTED = new ModelResourceLocation(PrimalMagick.resource("artificial_font_earth"), "");
+    private static final ModelResourceLocation MRL_FORBIDDEN = new ModelResourceLocation(PrimalMagick.resource("forbidden_font_earth"), "");
+    private static final ModelResourceLocation MRL_HEAVENLY = new ModelResourceLocation(PrimalMagick.resource("heavenly_font_earth"), "");
     
     public ManaFontISTER() {
         super(Minecraft.getInstance() == null ? null : Minecraft.getInstance().getBlockEntityRenderDispatcher(), 
@@ -52,22 +51,17 @@ public class ManaFontISTER extends BlockEntityWithoutLevelRenderer {
     }
     
     protected ModelResourceLocation getModelResourceLocation(DeviceTier tier) {
-        switch (tier) {
-        case BASIC:
-            return MRL_BASIC;
-        case ENCHANTED:
-            return MRL_ENCHANTED;
-        case FORBIDDEN:
-            return MRL_FORBIDDEN;
-        case HEAVENLY:
-            return MRL_HEAVENLY;
-        default:
-            return MRL_BASIC;
-        }
+        return switch (tier) {
+            case BASIC -> MRL_BASIC;
+            case ENCHANTED -> MRL_ENCHANTED;
+            case FORBIDDEN -> MRL_FORBIDDEN;
+            case HEAVENLY -> MRL_HEAVENLY;
+            default -> MRL_BASIC;
+        };
     }
     
     @Override
-    public void renderByItem(ItemStack itemStack, ItemTransforms.TransformType transformType, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
+    public void renderByItem(ItemStack itemStack, ItemDisplayContext transformType, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
         Item item = itemStack.getItem();
         if (item instanceof BlockItem && ((BlockItem)item).getBlock() instanceof AbstractManaFontBlock) {
             AbstractManaFontBlock block = (AbstractManaFontBlock)((BlockItem)item).getBlock();
@@ -91,8 +85,8 @@ public class ManaFontISTER extends BlockEntityWithoutLevelRenderer {
             // Draw the font core
             matrixStack.pushPose();
             matrixStack.translate(0.5D, 0.5D, 0.5D);
-            matrixStack.mulPose(Vector3f.ZP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
-            matrixStack.mulPose(Vector3f.XP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
+            matrixStack.mulPose(Axis.ZP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
+            matrixStack.mulPose(Axis.XP.rotationDegrees(45.0F)); // Tilt the core onto its diagonal
             
             // Draw the south face of the core
             this.addVertex(builder, matrixStack, -ds, ds, ds, r, g, b, sprite.getU0(), sprite.getV1());

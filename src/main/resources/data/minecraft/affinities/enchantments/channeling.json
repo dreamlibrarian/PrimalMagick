@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:channeling",
-  "multiplier": {
-    "sky": 1
-  }
-}

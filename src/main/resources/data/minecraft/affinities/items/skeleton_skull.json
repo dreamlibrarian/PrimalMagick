@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:skeleton_skull",
-  "set": {
-    "moon": 5,
-    "blood": 20
-  }
-}

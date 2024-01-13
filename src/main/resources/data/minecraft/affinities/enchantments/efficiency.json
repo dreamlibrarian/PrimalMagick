@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:efficiency",
-  "multiplier": {
-    "earth": 1
-  }
-}

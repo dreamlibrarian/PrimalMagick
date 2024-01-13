@@ -1,7 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:potion",
-  "set": {
-    "sea": 5
-  }
-}

@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:loyalty",
-  "multiplier": {
-    "sky": 1
-  }
-}

@@ -1,7 +1,6 @@
 package com.verdantartifice.primalmagick.common.entities.companions.pixies;
 
 import java.util.EnumSet;
-import java.util.Random;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -23,6 +22,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.TimeUtil;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.InteractionHand;
@@ -91,8 +91,9 @@ public abstract class AbstractPixieEntity extends AbstractCompanionEntity implem
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         super.readAdditionalSaveData(compound);
-        if (!this.level.isClientSide) {
-            this.readPersistentAngerSaveData((ServerLevel)this.level, compound);
+        Level level = this.level();
+        if (!level.isClientSide) {
+            this.readPersistentAngerSaveData((ServerLevel)level, compound);
         }
     }
 
@@ -113,7 +114,7 @@ public abstract class AbstractPixieEntity extends AbstractCompanionEntity implem
 
     @Override
     public boolean isFlying() {
-        return !this.onGround;
+        return !this.onGround();
     }
 
     @Override
@@ -144,10 +145,11 @@ public abstract class AbstractPixieEntity extends AbstractCompanionEntity implem
             this.attackTimer--;
         }
         
-        if (!this.level.isClientSide) {
-            this.updatePersistentAnger((ServerLevel)this.level, true);
+        Level level = this.level();
+        if (!level.isClientSide) {
+            this.updatePersistentAnger((ServerLevel)level, true);
             if (this.isAlive()) {
-                this.level.broadcastEntityEvent(this, (byte)15);
+                level.broadcastEntityEvent(this, (byte)15);
             }
         }
     }
@@ -224,10 +226,10 @@ public abstract class AbstractPixieEntity extends AbstractCompanionEntity implem
     @Override
     protected InteractionResult mobInteract(Player playerIn, InteractionHand hand) {
         InteractionResult actionResult = super.mobInteract(playerIn, hand);
-        if (!actionResult.consumesAction() && !this.level.isClientSide && this.isCompanionOwner(playerIn)) {
+        if (!actionResult.consumesAction() && !this.level().isClientSide && this.isCompanionOwner(playerIn)) {
             ItemStack held = playerIn.getItemInHand(hand);
             ItemStack stack = new ItemStack(this.getSpawnItem());
-            if (held.sameItem(stack)) {
+            if (ItemStack.isSameItem(held, stack)) {
                 held.grow(1);
             } else if (held.isEmpty()) {
                 playerIn.setItemInHand(hand, stack);
@@ -312,7 +314,7 @@ public abstract class AbstractPixieEntity extends AbstractCompanionEntity implem
         public void tick() {
             if (--this.timeToRecalcPath <= 0) {
                 this.timeToRecalcPath = 40;
-                Random random = this.pixie.getRandom();
+                RandomSource random = this.pixie.getRandom();
                 double d0 = this.pixie.getX() + (double)((random.nextFloat() * 2.0F - 1.0F) * this.wanderDistance);
                 double d1 = this.pixie.getY() + (double)((random.nextFloat() * 2.0F - 1.0F) * 2.0F);
                 double d2 = this.pixie.getZ() + (double)((random.nextFloat() * 2.0F - 1.0F) * this.wanderDistance);

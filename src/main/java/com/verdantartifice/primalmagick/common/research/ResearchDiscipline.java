@@ -3,11 +3,14 @@ package com.verdantartifice.primalmagick.common.research;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.common.stats.Stat;
 
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +28,7 @@ public class ResearchDiscipline {
     protected final ResourceLocation iconLocation;
     protected final Stat craftingStat;
     protected final Map<SimpleResearchKey, ResearchEntry> entries = new HashMap<>();
+    protected List<ResearchEntry> finales = null;
     
     protected ResearchDiscipline(@Nonnull String key, @Nullable CompoundResearchKey unlockResearchKey, @Nonnull ResourceLocation icon, @Nullable Stat craftingStat) {
         this.key = key;
@@ -45,7 +49,7 @@ public class ResearchDiscipline {
     
     @Nonnull
     public String getNameTranslationKey() {
-        return "primalmagick.research_discipline." + this.key;
+        return String.join(".", "research_discipline", PrimalMagick.MODID, this.key);
     }
     
     @Nullable
@@ -85,5 +89,18 @@ public class ResearchDiscipline {
     
     void clearEntries() {
         this.entries.clear();
+    }
+    
+    /**
+     * Get the list of all research entries, from any discipline, which serve as a finale to this discipline.
+     * 
+     * @return finale research entries for this discipline
+     */
+    @Nonnull
+    public List<ResearchEntry> getFinaleEntries() {
+        if (this.finales == null) {
+            this.finales = ResearchEntries.getAllEntries().stream().filter(e -> e.isFinaleFor(this.key)).collect(Collectors.toList());
+        }
+        return this.finales;
     }
 }

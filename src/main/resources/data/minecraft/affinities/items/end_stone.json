@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:end_stone",
-  "set": {
-    "earth": 5,
-    "void": 5
-  }
-}

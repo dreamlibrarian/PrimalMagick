@@ -1,0 +1,8 @@
+{
+  "type": "item",
+  "set": {
+    "earth": 15,
+    "sea": 25
+  },
+  "target": "minecraft:trident"
+}

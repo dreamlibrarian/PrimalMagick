@@ -1,0 +1,10 @@
+{
+  "type": "entity_type",
+  "target": "primalmagick:hexium_golem",
+  "values": {
+    "blood": 10,
+    "earth": 20,
+    "infernal": 10,
+    "void": 10
+  }
+}

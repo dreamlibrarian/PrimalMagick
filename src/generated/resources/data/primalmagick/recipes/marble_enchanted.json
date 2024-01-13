@@ -1,0 +1,46 @@
+{
+  "type": "primalmagick:arcane_crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    },
+    {
+      "item": "primalmagick:marble_raw"
+    }
+  ],
+  "mana": {
+    "sources": {
+      "earth": 1,
+      "moon": 1,
+      "sea": 1,
+      "sky": 1,
+      "sun": 1
+    }
+  },
+  "research": "EXPERT_MANAWEAVING",
+  "result": {
+    "Count": 9,
+    "id": "primalmagick:marble_enchanted"
+  }
+}

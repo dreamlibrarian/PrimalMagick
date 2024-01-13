@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:pumpkin_seeds",
-  "set": {
-    "earth": 2,
-    "sun": 2
-  }
-}

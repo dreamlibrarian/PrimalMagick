@@ -5,7 +5,6 @@ import com.verdantartifice.primalmagick.common.tiles.crafting.RunecarvingTableTi
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -22,9 +21,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Block definition for the runecarving table.  The runecarving table lets the player turn stone
@@ -37,7 +36,7 @@ public class RunecarvingTableBlock extends BaseEntityBlock {
     protected static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
     public RunecarvingTableBlock() {
-        super(Block.Properties.of(Material.WOOD).strength(1.5F, 6.0F).sound(SoundType.WOOD).noOcclusion());
+        super(Block.Properties.of().mapColor(MapColor.WOOD).ignitedByLava().instrument(NoteBlockInstrument.BASS).strength(1.5F, 6.0F).sound(SoundType.WOOD).noOcclusion());
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
     
@@ -74,7 +73,7 @@ public class RunecarvingTableBlock extends BaseEntityBlock {
             // Open the GUI for the research table
             BlockEntity tile = worldIn.getBlockEntity(pos);
             if (tile instanceof RunecarvingTableTileEntity tableTile) {
-                NetworkHooks.openGui(serverPlayer, tableTile, tile.getBlockPos());
+                serverPlayer.openMenu(tableTile, tile.getBlockPos());
             }
         }
         return InteractionResult.SUCCESS;
@@ -92,7 +91,7 @@ public class RunecarvingTableBlock extends BaseEntityBlock {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
             if (tile instanceof RunecarvingTableTileEntity castTile) {
-                Containers.dropContents(worldIn, pos, castTile);
+                castTile.dropContents(worldIn, pos);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);

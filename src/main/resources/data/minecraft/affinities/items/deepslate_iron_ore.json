@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:deepslate_iron_ore",
-  "base": "minecraft:deepslate",
-  "add": {
-    "earth": 10
-  }
-}

@@ -9,19 +9,22 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.verdantartifice.primalmagick.PrimalMagick;
+import com.verdantartifice.primalmagick.common.research.ResearchName;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ItemLike;
+import net.minecraftforge.registries.ForgeRegistries;
 
 public class ResearchAddendumBuilder {
     protected final String modId;
     protected final List<SimpleResearchKey> requiredResearch = new ArrayList<>();
     protected final List<ResourceLocation> recipes = new ArrayList<>();
     protected final List<SimpleResearchKey> siblings = new ArrayList<>();
-    protected SourceList attunements;
+    protected final SourceList.Builder attunements = SourceList.builder();
 
     protected ResearchAddendumBuilder(@Nonnull String modId) {
         this.modId = modId;
@@ -36,7 +39,11 @@ public class ResearchAddendumBuilder {
     }
     
     public ResearchAddendumBuilder requiredResearch(@Nonnull String keyStr) {
-        return requiredResearch(SimpleResearchKey.parse(keyStr));
+        return requiredResearch(ResearchNames.find(keyStr).orElseThrow());
+    }
+    
+    public ResearchAddendumBuilder requiredResearch(@Nonnull ResearchName key) {
+        return requiredResearch(key.simpleKey());
     }
     
     public ResearchAddendumBuilder requiredResearch(@Nonnull SimpleResearchKey key) {
@@ -45,15 +52,12 @@ public class ResearchAddendumBuilder {
     }
     
     public ResearchAddendumBuilder attunement(@Nonnull SourceList sources) {
-        this.attunements = sources.copy();
+        this.attunements.with(sources);
         return this;
     }
     
     public ResearchAddendumBuilder attunement(@Nonnull Source source, int amount) {
-        if (this.attunements == null) {
-            this.attunements = new SourceList();
-        }
-        this.attunements.add(source, amount);
+        this.attunements.with(source, amount);
         return this;
     }
     
@@ -66,7 +70,7 @@ public class ResearchAddendumBuilder {
     }
     
     public ResearchAddendumBuilder recipe(@Nonnull ItemLike item) {
-        return recipe(item.asItem().getRegistryName());
+        return recipe(ForgeRegistries.ITEMS.getKey(item.asItem()));
     }
     
     public ResearchAddendumBuilder recipe(@Nonnull ResourceLocation loc) {
@@ -75,7 +79,11 @@ public class ResearchAddendumBuilder {
     }
     
     public ResearchAddendumBuilder sibling(@Nonnull String keyStr) {
-        return sibling(SimpleResearchKey.parse(keyStr));
+        return sibling(ResearchNames.find(keyStr).orElseThrow());
+    }
+    
+    public ResearchAddendumBuilder sibling(@Nonnull ResearchName key) {
+        return sibling(key.simpleKey());
     }
     
     public ResearchAddendumBuilder sibling(@Nonnull SimpleResearchKey key) {
@@ -91,7 +99,7 @@ public class ResearchAddendumBuilder {
     
     public IFinishedResearchAddendum build() {
         this.validate();
-        return new ResearchAddendumBuilder.Result(this.modId, this.requiredResearch, this.recipes, this.siblings, this.attunements);
+        return new ResearchAddendumBuilder.Result(this.modId, this.requiredResearch, this.recipes, this.siblings, this.attunements.build());
     }
     
     public static class Result implements IFinishedResearchAddendum {
@@ -125,7 +133,7 @@ public class ResearchAddendumBuilder {
         }
 
         private String getTextTranslationKey() {
-            return this.modId.toLowerCase() + ".research." + this.entryKey.toLowerCase() + ".text.addenda." + this.stageIndex;
+            return String.join(".", "research", this.modId.toLowerCase(), this.entryKey.toLowerCase(), "text", "addenda", Integer.toString(this.stageIndex));
         }
 
         @Override

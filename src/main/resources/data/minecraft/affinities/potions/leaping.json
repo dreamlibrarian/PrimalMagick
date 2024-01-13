@@ -1,7 +1,0 @@
-{
-  "type": "potion_bonus",
-  "target": "minecraft:leaping",
-  "bonus": {
-    "sky": 2
-  }
-}

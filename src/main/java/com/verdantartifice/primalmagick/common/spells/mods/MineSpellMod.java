@@ -3,12 +3,11 @@ package com.verdantartifice.primalmagick.common.spells.mods;
 import java.util.Map;
 
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 import com.verdantartifice.primalmagick.common.spells.SpellProperty;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -23,7 +22,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public class MineSpellMod extends AbstractSpellMod {
     public static final String TYPE = "mine";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_MOD_MINE"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_MOD_MINE.get().compoundKey();
 
     public MineSpellMod() {
         super();
@@ -41,7 +40,7 @@ public class MineSpellMod extends AbstractSpellMod {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("duration", new SpellProperty("duration", "primalmagick.spell.property.duration", 1, 5));
+        propMap.put("duration", new SpellProperty("duration", "spells.primalmagick.property.duration", 1, 5));
         return propMap;
     }
     
@@ -66,6 +65,6 @@ public class MineSpellMod extends AbstractSpellMod {
 
     @Override
     public Component getDetailTooltip(SpellPackage spell, ItemStack spellSource) {
-        return new TranslatableComponent("primalmagick.spell.mod.detail_tooltip." + this.getModType(), this.getDurationMinutes(spell, spellSource));
+        return Component.translatable("spells.primalmagick.mod." + this.getModType() + ".detail_tooltip", this.getDurationMinutes(spell, spellSource));
     }
 }

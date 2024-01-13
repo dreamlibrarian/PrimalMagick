@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:luck_of_the_sea",
-  "multiplier": {
-    "moon": 1
-  }
-}

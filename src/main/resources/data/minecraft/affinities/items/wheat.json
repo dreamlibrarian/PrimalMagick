@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:wheat",
-  "set": {
-    "earth": 5,
-    "sun": 5
-  }
-}

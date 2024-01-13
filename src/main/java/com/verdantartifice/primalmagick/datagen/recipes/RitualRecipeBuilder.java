@@ -2,26 +2,33 @@ package com.verdantartifice.primalmagick.datagen.recipes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Optional;
+
+import javax.json.stream.JsonGenerationException;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import com.verdantartifice.primalmagick.common.crafting.BlockIngredient;
 import com.verdantartifice.primalmagick.common.crafting.RecipeSerializersPM;
 import com.verdantartifice.primalmagick.common.crafting.RitualRecipe;
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 
+import net.minecraft.Util;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeOutput;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.Tag;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
+import net.minecraftforge.common.crafting.ingredients.PartialNBTIngredient;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
@@ -125,7 +132,7 @@ public class RitualRecipeBuilder {
      * @param quantity the number of the tag to add
      * @return the modified builder
      */
-    public RitualRecipeBuilder addIngredient(Tag<Item> tag, int quantity) {
+    public RitualRecipeBuilder addIngredient(TagKey<Item> tag, int quantity) {
         return this.addIngredient(Ingredient.of(tag), quantity);
     }
     
@@ -135,8 +142,19 @@ public class RitualRecipeBuilder {
      * @param tag the tag of items to be added
      * @return the modified builder
      */
-    public RitualRecipeBuilder addIngredient(Tag<Item> tag) {
+    public RitualRecipeBuilder addIngredient(TagKey<Item> tag) {
         return this.addIngredient(tag, 1);
+    }
+    
+    /**
+     * Add an ingredient to the recipe that requires a partial NBT match on one or more item types.
+     * 
+     * @param nbt the NBT data which must be satisfied for an ingredient match
+     * @param items the types of allowed items for the ingredient to be added
+     * @return the modified builder
+     */
+    public RitualRecipeBuilder addIngredientNbtPartial(CompoundTag nbt, ItemLike... items) {
+        return this.addIngredient(PartialNBTIngredient.of(nbt, items));
     }
     
     /**
@@ -191,7 +209,7 @@ public class RitualRecipeBuilder {
      * @param quantity the number of the tag to add
      * @return the modified builder
      */
-    public RitualRecipeBuilder addProp(Tag<Block> tag, int quantity) {
+    public RitualRecipeBuilder addProp(TagKey<Block> tag, int quantity) {
         return this.addProp(BlockIngredient.fromTag(tag), quantity);
     }
     
@@ -201,7 +219,7 @@ public class RitualRecipeBuilder {
      * @param tag the tag of blocks to be added
      * @return the modified builder
      */
-    public RitualRecipeBuilder addProp(Tag<Block> tag) {
+    public RitualRecipeBuilder addProp(TagKey<Block> tag) {
         return this.addProp(tag, 1);
     }
     
@@ -225,6 +243,16 @@ public class RitualRecipeBuilder {
     public RitualRecipeBuilder research(CompoundResearchKey research) {
         this.research = research.copy();
         return this;
+    }
+    
+    /**
+     * Adds a research requirement to this recipe.  Throws if the optional is empty.
+     * 
+     * @param researchOpt the research requirement to add
+     * @return the modified builder
+     */
+    public RitualRecipeBuilder research(Optional<CompoundResearchKey> researchOpt) {
+        return this.research(researchOpt.orElseThrow());
     }
     
     /**
@@ -252,38 +280,38 @@ public class RitualRecipeBuilder {
     /**
      * Builds this recipe into an {@link IFinishedRecipe}.
      * 
-     * @param consumer a consumer for the finished recipe
+     * @param output a consumer for the finished recipe
      * @param id the ID of the finished recipe
      */
-    public void build(Consumer<FinishedRecipe> consumer, ResourceLocation id) {
+    public void build(RecipeOutput output, ResourceLocation id) {
         this.validate(id);
-        consumer.accept(new RitualRecipeBuilder.Result(id, this.result, this.group == null ? "" : this.group, this.ingredients, this.props, this.research, this.manaCosts, this.instability));
+        output.accept(new RitualRecipeBuilder.Result(id, this.result, this.group == null ? "" : this.group, this.ingredients, this.props, this.research, this.manaCosts, this.instability));
     }
     
     /**
-     * Builds this recipe into an {@link IFinishedRecipe}. Use {@link #build(Consumer)} if save is the same as the ID for
+     * Builds this recipe into an {@link IFinishedRecipe}. Use {@link #build(RecipeOutput)} if save is the same as the ID for
      * the result.
      * 
-     * @param consumer a consumer for the finished recipe
+     * @param output a consumer for the finished recipe
      * @param save custom ID for the finished recipe
      */
-    public void build(Consumer<FinishedRecipe> consumer, String save) {
+    public void build(RecipeOutput output, String save) {
         ResourceLocation id = ForgeRegistries.ITEMS.getKey(this.result.getItem());
         ResourceLocation saveLoc = new ResourceLocation(save);
         if (saveLoc.equals(id)) {
             throw new IllegalStateException("Ritual Recipe " + save + " should remove its 'save' argument");
         } else {
-            this.build(consumer, saveLoc);
+            this.build(output, saveLoc);
         }
     }
     
     /**
      * Builds this recipe into an {@link IFinishedRecipe}.
      * 
-     * @param consumer a consumer for the finished recipe
+     * @param output a consumer for the finished recipe
      */
-    public void build(Consumer<FinishedRecipe> consumer) {
-        this.build(consumer, ForgeRegistries.ITEMS.getKey(this.result.getItem()));
+    public void build(RecipeOutput output) {
+        this.build(output, ForgeRegistries.ITEMS.getKey(this.result.getItem()));
     }
     
     /**
@@ -303,27 +331,7 @@ public class RitualRecipeBuilder {
         }
     }
     
-    public static class Result implements FinishedRecipe {
-        protected final ResourceLocation id;
-        protected final ItemStack result;
-        protected final String group;
-        protected final List<Ingredient> ingredients;
-        protected final List<BlockIngredient> props;
-        protected final CompoundResearchKey research;
-        protected final SourceList manaCosts;
-        protected final int instability;
-
-        public Result(ResourceLocation id, ItemStack result, String group, List<Ingredient> ingredients, List<BlockIngredient> props, CompoundResearchKey research, SourceList manaCosts, int instability) {
-            this.id = id;
-            this.result = result;
-            this.group = group;
-            this.ingredients = ingredients;
-            this.props = props;
-            this.research = research;
-            this.manaCosts = manaCosts;
-            this.instability = instability;
-        }
-
+    public static record Result(ResourceLocation id, ItemStack result, String group, List<Ingredient> ingredients, List<BlockIngredient> props, CompoundResearchKey research, SourceList manaCosts, int instability) implements FinishedRecipe {
         @Override
         public void serializeRecipeData(JsonObject json) {
             // Serialize the recipe group, if present
@@ -338,11 +346,7 @@ public class RitualRecipeBuilder {
             
             // Serialize the recipe mana costs, if present
             if (this.manaCosts != null && !this.manaCosts.isEmpty()) {
-                JsonObject manaJson = new JsonObject();
-                for (Source source : this.manaCosts.getSourcesSorted()) {
-                    manaJson.addProperty(source.getTag(), this.manaCosts.getAmount(source));
-                }
-                json.add("mana", manaJson);
+                json.add("mana", Util.getOrThrow(SourceList.CODEC.encodeStart(JsonOps.INSTANCE, this.manaCosts), JsonGenerationException::new));
             }
             
             // Serialize the instability rating
@@ -351,7 +355,7 @@ public class RitualRecipeBuilder {
             // Serialize the recipe ingredient list
             JsonArray ingredientsJson = new JsonArray();
             for (Ingredient ingredient : this.ingredients) {
-                ingredientsJson.add(ingredient.toJson());
+                ingredientsJson.add(ingredient.toJson(true));
             }
             json.add("ingredients", ingredientsJson);
             
@@ -359,42 +363,24 @@ public class RitualRecipeBuilder {
             if (this.props != null && !this.props.isEmpty()) {
                 JsonArray propsJson = new JsonArray();
                 for (BlockIngredient prop : this.props) {
-                    propsJson.add(prop.serialize());
+                    propsJson.add(prop.toJson(true));
                 }
                 json.add("props", propsJson);
             }
             
             // Serialize the recipe result
-            JsonObject resultJson = new JsonObject();
-            resultJson.addProperty("item", ForgeRegistries.ITEMS.getKey(this.result.getItem()).toString());
-            if (this.result.getCount() > 1) {
-                resultJson.addProperty("count", this.result.getCount());
-            }
-            if (this.result.hasTag()) {
-                resultJson.addProperty("nbt", this.result.getTag().toString());
-            }
-            json.add("result", resultJson);
+            json.add("result", Util.getOrThrow(ItemStack.CODEC.encodeStart(JsonOps.INSTANCE, this.result), JsonGenerationException::new));
         }
 
         @Override
-        public ResourceLocation getId() {
-            return this.id;
-        }
-
-        @Override
-        public RecipeSerializer<?> getType() {
+        public RecipeSerializer<?> type() {
             return RecipeSerializersPM.RITUAL.get();
         }
 
         @Override
-        public JsonObject serializeAdvancement() {
+        public AdvancementHolder advancement() {
             // Ritual recipes don't use the vanilla advancement unlock system, so return null
             return null;
-        }
-
-        @Override
-        public ResourceLocation getAdvancementId() {
-            return new ResourceLocation("");
         }
     }
 }

@@ -1,14 +1,18 @@
 package com.verdantartifice.primalmagick.common.attunements;
 
+import javax.annotation.Nonnull;
+
+import com.verdantartifice.primalmagick.PrimalMagick;
+
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.util.StringRepresentable;
 
 /**
  * Definition of attunement thresholds, determining when certain bonuses are received.
  * 
  * @author Daedalus4096
  */
-public enum AttunementThreshold {
+public enum AttunementThreshold implements StringRepresentable {
     MINOR("minor", 30),
     LESSER("lesser", 60),
     GREATER("greater", 90);
@@ -30,6 +34,16 @@ public enum AttunementThreshold {
     }
     
     public Component getThresholdText() {
-        return new TranslatableComponent("primalmagick.attunement_threshold." + this.name());
+        return Component.translatable(this.getNameTranslationKey());
+    }
+
+    @Nonnull
+    public String getNameTranslationKey() {
+        return String.join(".", "attunement_threshold", PrimalMagick.MODID, this.getSerializedName());
+    }
+
+    @Override
+    public String getSerializedName() {
+        return this.tag;
     }
 }

@@ -1,0 +1,8 @@
+{
+  "type": "entity_type",
+  "target": "minecraft:cod",
+  "values": {
+    "blood": 5,
+    "sea": 10
+  }
+}

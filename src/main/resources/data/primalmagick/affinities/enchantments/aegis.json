@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "primalmagick:aegis",
-  "multiplier": {
-    "hallowed": 1
-  }
-}

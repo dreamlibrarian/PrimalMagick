@@ -1,20 +1,18 @@
 package com.verdantartifice.primalmagick.client.gui.widgets;
 
 import java.awt.Color;
-import java.util.Collections;
+import java.util.List;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.client.util.GuiUtils;
 import com.verdantartifice.primalmagick.common.sources.Source;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 
 /**
  * Base class for display widgets which show a source icon with amount.
@@ -26,7 +24,7 @@ public abstract class AbstractSourceWidget extends AbstractWidget {
     protected int amount;
 
     public AbstractSourceWidget(Source source, int amount, int xIn, int yIn) {
-        super(xIn, yIn, 16, 16, TextComponent.EMPTY);
+        super(xIn, yIn, 16, 16, Component.empty());
         this.source = source;
         this.amount = amount;
     }
@@ -44,48 +42,33 @@ public abstract class AbstractSourceWidget extends AbstractWidget {
     }
     
     @Override
-    public void renderButton(PoseStack matrixStack, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
+    public void renderWidget(GuiGraphics guiGraphics, int p_renderButton_1_, int p_renderButton_2_, float p_renderButton_3_) {
         Minecraft mc = Minecraft.getInstance();
         boolean discovered = this.source.isDiscovered(mc.player);
         
         // Draw the colored source icon
         RenderSystem.enableBlend();
         RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        matrixStack.pushPose();
-        if (discovered) {
-            RenderSystem.setShaderTexture(0, this.source.getImage());
-        } else {
-            RenderSystem.setShaderTexture(0, Source.getUnknownImage());
-        }
-        matrixStack.translate(this.x, this.y, 0.0F);
-        matrixStack.scale(0.0625F, 0.0625F, 0.0625F);
-        this.blit(matrixStack, 0, 0, 0, 0, 255, 255);
-        matrixStack.popPose();
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(this.getX(), this.getY(), 0.0F);
+        guiGraphics.pose().scale(0.0625F, 0.0625F, 0.0625F);
+        guiGraphics.blit(discovered ? this.source.getImage() : Source.getUnknownImage(), 0, 0, 0, 0, 255, 255);
+        guiGraphics.pose().popPose();
         
         // Draw the amount string
-        matrixStack.pushPose();
-        Component amountText = new TextComponent(Integer.toString(this.amount));
+        guiGraphics.pose().pushPose();
+        Component amountText = Component.literal(this.getAmountString());
         int width = mc.font.width(amountText.getString());
-        matrixStack.translate(this.x + 16 - width / 2, this.y + 12, 5.0F);
-        matrixStack.scale(0.5F, 0.5F, 0.5F);
-        mc.font.drawShadow(matrixStack, amountText, 0.0F, 0.0F, Color.WHITE.getRGB());
-        matrixStack.popPose();
+        guiGraphics.pose().translate(this.getX() + 16 - width / 2, this.getY() + 12, 5.0F);
+        guiGraphics.pose().scale(0.5F, 0.5F, 0.5F);
+        guiGraphics.drawString(mc.font, amountText, 0, 0, this.getAmountStringColor());
+        guiGraphics.pose().popPose();
         
         // Draw the tooltip if applicable
         if (this.isHoveredOrFocused()) {
-            Component sourceText = discovered ? 
-                    this.source.getNameText() :
-                    new TranslatableComponent(Source.getUnknownTranslationKey());
-            Component labelText = new TranslatableComponent(this.getTooltipTranslationKey(), this.amount, sourceText);
-            GuiUtils.renderCustomTooltip(matrixStack, Collections.singletonList(labelText), this.x, this.y);
+            GuiUtils.renderCustomTooltip(guiGraphics, this.getTooltipLines(), p_renderButton_1_, p_renderButton_2_);
         }
     }
-    
-    /**
-     * Get the translation key for this widget's tooltip
-     * @return the translation key for this widget's tooltip
-     */
-    protected abstract String getTooltipTranslationKey();
     
     @Override
     public boolean mouseClicked(double p_mouseClicked_1_, double p_mouseClicked_3_, int p_mouseClicked_5_) {
@@ -94,6 +77,24 @@ public abstract class AbstractSourceWidget extends AbstractWidget {
     }
 
     @Override
-    public void updateNarration(NarrationElementOutput output) {
+    public void updateWidgetNarration(NarrationElementOutput output) {
     }
+    
+    protected String getAmountString() {
+        return Integer.toString(this.getAmount());
+    }
+    
+    protected int getAmountStringColor() {
+        return Color.WHITE.getRGB();
+    }
+    
+    protected Component getSourceText() {
+        Minecraft mc = Minecraft.getInstance();
+        boolean discovered = this.source.isDiscovered(mc.player);
+        return discovered ? 
+                this.source.getNameText() :
+                Component.translatable(Source.getUnknownTranslationKey());
+    }
+    
+    protected abstract List<Component> getTooltipLines();
 }

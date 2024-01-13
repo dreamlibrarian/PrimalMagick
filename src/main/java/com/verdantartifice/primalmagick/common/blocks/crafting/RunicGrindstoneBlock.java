@@ -1,10 +1,10 @@
 package com.verdantartifice.primalmagick.common.blocks.crafting;
 
-import com.verdantartifice.primalmagick.common.containers.RunicGrindstoneContainer;
+import com.verdantartifice.primalmagick.common.menus.RunicGrindstoneMenu;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -19,10 +19,9 @@ import net.minecraft.world.level.block.GrindstoneBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Block definition for a runic grindstone.  Works just like a regular grindstone, except it also
@@ -32,7 +31,7 @@ import net.minecraftforge.network.NetworkHooks;
  */
 public class RunicGrindstoneBlock extends GrindstoneBlock {
     public RunicGrindstoneBlock() {
-        super(Block.Properties.of(Material.HEAVY_METAL, MaterialColor.METAL).strength(2.0F, 6.0F).sound(SoundType.STONE));
+        super(Block.Properties.of().mapColor(MapColor.METAL).pushReaction(PushReaction.BLOCK).strength(2.0F, 6.0F).sound(SoundType.STONE));
     }
     
     @Override
@@ -59,8 +58,8 @@ public class RunicGrindstoneBlock extends GrindstoneBlock {
     
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        if (!worldIn.isClientSide && player instanceof ServerPlayer) {
-            NetworkHooks.openGui((ServerPlayer)player, state.getMenuProvider(worldIn, pos));
+        if (!worldIn.isClientSide && player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.openMenu(state.getMenuProvider(worldIn, pos));
         }
         return InteractionResult.SUCCESS;
     }
@@ -68,7 +67,7 @@ public class RunicGrindstoneBlock extends GrindstoneBlock {
     @Override
     public MenuProvider getMenuProvider(BlockState state, Level worldIn, BlockPos pos) {
         return new SimpleMenuProvider((windowId, playerInv, player) -> {
-            return new RunicGrindstoneContainer(windowId, playerInv, ContainerLevelAccess.create(worldIn, pos));
-         }, new TranslatableComponent(this.getDescriptionId()));
+            return new RunicGrindstoneMenu(windowId, playerInv, ContainerLevelAccess.create(worldIn, pos));
+         }, Component.translatable(this.getDescriptionId()));
     }
 }

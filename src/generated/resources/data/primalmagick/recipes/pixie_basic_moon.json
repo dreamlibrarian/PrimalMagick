@@ -1,0 +1,36 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "primalmagick:mana_salts"
+    },
+    {
+      "item": "primalmagick:essence_shard_moon"
+    },
+    {
+      "item": "primalmagick:rune_summon"
+    },
+    {
+      "item": "primalmagick:rune_creature"
+    }
+  ],
+  "instability": 3,
+  "mana": {
+    "sources": {
+      "moon": 40
+    }
+  },
+  "props": [
+    {
+      "block": "primalmagick:incense_brazier"
+    },
+    {
+      "block": "primalmagick:ritual_bell"
+    }
+  ],
+  "research": "PIXIES",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:pixie_basic_moon"
+  }
+}

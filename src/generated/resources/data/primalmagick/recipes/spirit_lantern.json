@@ -1,0 +1,26 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "N": {
+      "tag": "primalmagick:nuggets/hexium"
+    },
+    "T": {
+      "item": "minecraft:soul_torch"
+    }
+  },
+  "mana": {
+    "sources": {
+      "infernal": 10
+    }
+  },
+  "pattern": [
+    "NNN",
+    "NTN",
+    "NNN"
+  ],
+  "research": "SUNLAMP&&HEXIUM",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:spirit_lantern"
+  }
+}

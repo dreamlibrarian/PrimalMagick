@@ -1,0 +1,28 @@
+{
+  "type": "primalmagick:arcane_crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "primalmagick:rune_unattuned"
+    },
+    {
+      "item": "primalmagick:essence_shard_earth"
+    },
+    {
+      "item": "primalmagick:essence_shard_sea"
+    },
+    {
+      "item": "primalmagick:essence_shard_sky"
+    },
+    {
+      "item": "primalmagick:essence_shard_sun"
+    },
+    {
+      "item": "primalmagick:essence_shard_moon"
+    }
+  ],
+  "research": "RUNE_INSIGHT",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:rune_insight"
+  }
+}

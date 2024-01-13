@@ -1,19 +1,18 @@
 package com.verdantartifice.primalmagick.client.gui.widgets;
 
 import java.awt.Color;
+import java.text.DecimalFormat;
 import java.util.Collections;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.util.GuiUtils;
 import com.verdantartifice.primalmagick.common.sources.Source;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -22,22 +21,23 @@ import net.minecraft.resources.ResourceLocation;
  * @author Daedalus4096
  */
 public class ManaGaugeWidget extends AbstractWidget {
-    protected static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/mana_gauge.png");
+    protected static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/mana_gauge.png");
+    protected static final DecimalFormat MANA_FORMATTER = new DecimalFormat("#######.##");
 
     protected final Source source;
     protected int maxAmount;
     protected int curAmount;
     
     public ManaGaugeWidget(int xPos, int yPos, Source source, int curAmount, int maxAmount) {
-        super(xPos, yPos, 12, 52, TextComponent.EMPTY);
+        super(xPos, yPos, 12, 52, Component.empty());
         this.source = source;
         this.curAmount = curAmount;
         this.maxAmount = maxAmount;
     }
     
     public void setPosition(int newX, int newY) {
-        this.x = newX;
-        this.y = newY;
+        this.setX(newX);
+        this.setY(newY);
     }
     
     public void setCurrentMana(int amount) {
@@ -55,44 +55,64 @@ public class ManaGaugeWidget extends AbstractWidget {
     }
 
     @Override
-    public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        
-        matrixStack.pushPose();
-        matrixStack.translate(this.x, this.y, 0.0F);
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(this.getX(), this.getY(), 0.0F);
 
         // Render gauge background texture
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        this.blit(matrixStack, 0, 0, 12, 0, this.width, this.height);
+        guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        guiGraphics.blit(TEXTURE, 0, 0, 12, 0, this.width, this.height);
         
         // Render colored gauge
         int mana = this.getScaledMana();
         Color manaColor = new Color(this.source.getColor());
-        RenderSystem.setShaderColor(manaColor.getRed() / 255.0F, manaColor.getGreen() / 255.0F, manaColor.getBlue() / 255.0F, 1.0F);
-        this.blit(matrixStack, 1, 51 - mana, 1, 1, 10, mana);
+        guiGraphics.setColor(manaColor.getRed() / 255.0F, manaColor.getGreen() / 255.0F, manaColor.getBlue() / 255.0F, 1.0F);
+        guiGraphics.blit(TEXTURE, 1, 51 - mana, 1, 1, 10, mana);
 
         // Render gauge foreground texture
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        this.blit(matrixStack, 0, 0, 24, 0, this.width, this.height);
+        guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        guiGraphics.blit(TEXTURE, 0, 0, 24, 0, this.width, this.height);
 
-        matrixStack.popPose();
+        guiGraphics.pose().popPose();
         
         if (this.isHoveredOrFocused()) {
             Component sourceText = this.source.getNameText();
-            Component labelText = new TranslatableComponent("primalmagick.source.mana_gauge_tooltip", sourceText, (this.curAmount / 100.0D), (this.maxAmount / 100.0D));
-            GuiUtils.renderCustomTooltip(matrixStack, Collections.singletonList(labelText), this.x, this.y);
+            Component labelText = Component.translatable("tooltip.primalmagick.source.mana_gauge", sourceText, this.getManaText(), this.getMaxManaText());
+            GuiUtils.renderCustomTooltip(guiGraphics, Collections.singletonList(labelText), this.getX(), this.getY());
         }
     }
     
     protected int getScaledMana() {
-        if (this.maxAmount != 0 && this.curAmount != 0) {
+        if (this.maxAmount == -1) {
+            return 50;
+        } else if (this.maxAmount != 0 && this.curAmount != 0) {
             return (this.curAmount * 50 / this.maxAmount);
         } else {
             return 0;
         }
     }
 
+    protected MutableComponent getManaText() {
+        if (this.maxAmount == -1) {
+            // If the given source has infinte mana, show the infinity symbol
+            return Component.literal(Character.toString('\u221E'));
+        } else {
+            // Otherwise show the current real mana for that source
+            return Component.literal(MANA_FORMATTER.format(this.curAmount / 100.0D));
+        }
+    }
+
+    public MutableComponent getMaxManaText() {
+        if (this.maxAmount == -1) {
+            // If the given source has infinte mana, show the infinity symbol
+            return Component.literal(Character.toString('\u221E'));
+        } else {
+            // Otherwise show the max real for that source
+            return Component.literal(MANA_FORMATTER.format(this.maxAmount / 100.0D));
+        }
+    }
+    
     @Override
-    public void updateNarration(NarrationElementOutput output) {
+    public void updateWidgetNarration(NarrationElementOutput output) {
     }
 }

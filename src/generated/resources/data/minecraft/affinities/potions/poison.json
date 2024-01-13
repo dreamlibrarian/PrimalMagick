@@ -1,0 +1,8 @@
+{
+  "type": "potion_bonus",
+  "bonus": {
+    "blood": 1,
+    "earth": 1
+  },
+  "target": "minecraft:poison"
+}

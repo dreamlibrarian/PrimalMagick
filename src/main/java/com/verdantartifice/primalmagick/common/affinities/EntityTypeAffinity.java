@@ -1,6 +1,7 @@
 package com.verdantartifice.primalmagick.common.affinities;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -10,6 +11,7 @@ import com.google.gson.JsonSyntaxException;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 import com.verdantartifice.primalmagick.common.util.JsonUtils;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -35,9 +37,9 @@ public class EntityTypeAffinity extends AbstractAffinity {
     }
 
     @Override
-    protected SourceList calculateTotal(@Nullable RecipeManager recipeManager, @Nonnull List<ResourceLocation> history) {
+    protected CompletableFuture<SourceList> calculateTotalAsync(@Nullable RecipeManager recipeManager, @Nonnull RegistryAccess registryAccess, @Nonnull List<ResourceLocation> history) {
         if (this.values != null) {
-            return this.values;
+            return CompletableFuture.completedFuture(this.values);
         } else {
             throw new IllegalStateException("Entity type affinity has no values defined");
         }
@@ -52,7 +54,7 @@ public class EntityTypeAffinity extends AbstractAffinity {
             }
             
             ResourceLocation targetId = new ResourceLocation(target);
-            if (!ForgeRegistries.ENTITIES.containsKey(targetId)) {
+            if (!ForgeRegistries.ENTITY_TYPES.containsKey(targetId)) {
                 throw new JsonSyntaxException("Unknown target entity type " + target + " in affinity JSON for " + affinityId.toString());
             }
             

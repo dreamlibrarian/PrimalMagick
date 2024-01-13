@@ -5,7 +5,6 @@ import com.verdantartifice.primalmagick.common.tiles.devices.ResearchTableTileEn
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -23,12 +22,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Block definition for the research table.  The research table allows players to play a minigame
@@ -40,7 +39,7 @@ public class ResearchTableBlock extends BaseEntityBlock {
     protected static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
     public ResearchTableBlock() {
-        super(Block.Properties.of(Material.WOOD).strength(1.5F, 6.0F).sound(SoundType.WOOD).noOcclusion());
+        super(Block.Properties.of().mapColor(MapColor.WOOD).ignitedByLava().instrument(NoteBlockInstrument.BASS).strength(1.5F, 6.0F).sound(SoundType.WOOD).noOcclusion());
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
     
@@ -74,11 +73,11 @@ public class ResearchTableBlock extends BaseEntityBlock {
     
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        if (!worldIn.isClientSide && player instanceof ServerPlayer) {
+        if (!worldIn.isClientSide && player instanceof ServerPlayer serverPlayer) {
             // Open the GUI for the research table
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof ResearchTableTileEntity) {
-                NetworkHooks.openGui((ServerPlayer)player, (ResearchTableTileEntity)tile, tile.getBlockPos());
+            if (tile instanceof ResearchTableTileEntity tableTile) {
+                serverPlayer.openMenu(tableTile, tile.getBlockPos());
             }
         }
         return InteractionResult.SUCCESS;
@@ -101,7 +100,7 @@ public class ResearchTableBlock extends BaseEntityBlock {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
             if (tile instanceof ResearchTableTileEntity castTile) {
-                Containers.dropContents(worldIn, pos, castTile);
+                castTile.dropContents(worldIn, pos);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);

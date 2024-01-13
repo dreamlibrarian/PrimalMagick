@@ -1,0 +1,9 @@
+{
+  "type": "item",
+  "add": {
+    "blood": 1,
+    "sea": 5
+  },
+  "base": "minecraft:glass_bottle",
+  "target": "minecraft:honey_bottle"
+}

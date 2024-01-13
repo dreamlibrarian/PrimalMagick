@@ -1,22 +1,29 @@
 modLoader="javafml"
-loaderVersion="[34,)"
+loaderVersion="[47,)"
 issueTrackerURL="https://github.com/daedalus4096/PrimalMagick/issues"
 license="MIT License"
 
 [[mods]]
 modId="primalmagick"
-version="${file.jarVersion}"
+version="${mod_version}"
 displayName="Primal Magick"
 updateJSONURL="https://pastebin.com/raw/MZu4yZi8"
 displayURL="https://www.curseforge.com/minecraft/mc-mods/primal-magick"
 logoFile="primalmagick_banner_small.png"
-credits="Thanks to Lorelli, Quinloki, and DaRetroThaumaturge for the art!"
+credits="Thanks to Lorelli, Quinloki, DaRetroThaumaturge, and FyreAlchemage for the art!"
 authors="Daedalus4096"
 description='''Harness the magick of the primal sources of the land.'''
 
 [[dependencies.primalmagick]]
     modId="forge"
     mandatory=true
-    versionRange="[37,)"
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.primalmagick]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,)"
     ordering="NONE"
     side="BOTH"

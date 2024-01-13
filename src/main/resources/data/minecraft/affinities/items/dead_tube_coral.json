@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:dead_tube_coral",
-  "set": {
-    "earth": 5,
-    "sea": 5
-  }
-}

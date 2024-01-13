@@ -1,8 +1,0 @@
-{
-  "type": "potion_bonus",
-  "target": "minecraft:healing",
-  "bonus": {
-    "sun": 1,
-    "blood": 1
-  }
-}

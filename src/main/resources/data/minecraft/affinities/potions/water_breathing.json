@@ -1,8 +1,0 @@
-{
-  "type": "potion_bonus",
-  "target": "minecraft:water_breathing",
-  "bonus": {
-    "sea": 1,
-    "sky": 1
-  }
-}

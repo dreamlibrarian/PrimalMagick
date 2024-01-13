@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:ink_sac",
-  "set": {
-    "sea": 5,
-    "blood": 2
-  }
-}

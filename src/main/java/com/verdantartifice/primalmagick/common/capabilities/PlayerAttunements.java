@@ -2,6 +2,7 @@ package com.verdantartifice.primalmagick.common.capabilities;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
@@ -13,6 +14,7 @@ import com.verdantartifice.primalmagick.common.sources.Source;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,6 +31,11 @@ import net.minecraftforge.common.util.LazyOptional;
 public class PlayerAttunements implements IPlayerAttunements {
     // Nested map of sources to attunement types to values
     private final Map<Source, Map<AttunementType, Integer>> attunements = new ConcurrentHashMap<>();
+    
+    // Set of sources currently having their attunements suppressed
+    private final Set<Source> suppressions = ConcurrentHashMap.newKeySet();
+    
+    private long syncTimestamp = 0L;    // Last timestamp at which this capability received a sync from the server
 
     @Override
     public CompoundTag serializeNBT() {
@@ -51,12 +58,23 @@ public class PlayerAttunements implements IPlayerAttunements {
         }
         rootTag.put("Attunements", attunementList);
         
+        // Serialize recorded suppression values
+        ListTag suppressionList = new ListTag();
+        for (Source source : this.suppressions) {
+            if (source != null) {
+                suppressionList.add(StringTag.valueOf(source.getTag()));
+            }
+        }
+        rootTag.put("Suppressions", suppressionList);
+        
+        rootTag.putLong("SyncTimestamp", System.currentTimeMillis());
+        
         return rootTag;
     }
 
     @Override
     public void deserializeNBT(CompoundTag nbt) {
-        if (nbt == null) {
+        if (nbt == null || nbt.getLong("SyncTimestamp") <= this.syncTimestamp) {
             return;
         }
         
@@ -74,11 +92,19 @@ public class PlayerAttunements implements IPlayerAttunements {
             int value = tag.getInt("Value");
             this.setValue(source, type, value);
         }
+        
+        // Deserialize suppression values
+        ListTag suppressionList = nbt.getList("Suppressions", Tag.TAG_STRING);
+        for (int index = 0; index < suppressionList.size(); index++) {
+            Source source = Source.getSource(suppressionList.getString(index));
+            this.setSuppressed(source, true);
+        }
     }
 
     @Override
     public void clear() {
         this.attunements.clear();
+        this.suppressions.clear();
     }
 
     @Override
@@ -102,6 +128,24 @@ public class PlayerAttunements implements IPlayerAttunements {
     }
 
     @Override
+    public boolean isSuppressed(Source source) {
+        return this.suppressions.contains(source);
+    }
+
+    @Override
+    public void setSuppressed(Source source, boolean value) {
+        // Don't allow null keys in the set
+        if (source != null) {
+            boolean present = this.isSuppressed(source);
+            if (!present && value) {
+                this.suppressions.add(source);
+            } else if (present && !value) {
+                this.suppressions.remove(source);
+            }
+        }
+    }
+
+    @Override
     public void sync(ServerPlayer player) {
         if (player != null) {
             PacketHandler.sendToPlayer(new SyncAttunementsPacket(player), player);
@@ -115,7 +159,7 @@ public class PlayerAttunements implements IPlayerAttunements {
      * @see {@link com.verdantartifice.primalmagick.common.events.CapabilityEvents}
      */
     public static class Provider implements ICapabilitySerializable<CompoundTag> {
-        public static final ResourceLocation NAME = new ResourceLocation(PrimalMagick.MODID, "capability_attunements");
+        public static final ResourceLocation NAME = PrimalMagick.resource("capability_attunements");
         
         private final IPlayerAttunements instance = new PlayerAttunements();
         private final LazyOptional<IPlayerAttunements> holder = LazyOptional.of(() -> instance);  // Cache a lazy optional of the capability instance

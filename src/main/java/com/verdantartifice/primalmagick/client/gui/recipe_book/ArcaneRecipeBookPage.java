@@ -7,15 +7,18 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.common.crafting.recipe_book.ArcaneRecipeBook;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.StateSwitchingButton;
+import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.screens.recipebook.RecipeShownListener;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.stats.RecipeBook;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 /**
  * GUI page for the arcane recipe book.
@@ -24,7 +27,9 @@ import net.minecraft.world.item.crafting.Recipe;
  */
 public class ArcaneRecipeBookPage {
     public static final int ITEMS_PER_PAGE = 20;
-    
+    private static final WidgetSprites PAGE_FORWARD_SPRITES = new WidgetSprites(new ResourceLocation("recipe_book/page_forward"), new ResourceLocation("recipe_book/page_forward_highlighted"));
+    private static final WidgetSprites PAGE_BACKWARD_SPRITES = new WidgetSprites(new ResourceLocation("recipe_book/page_backward"), new ResourceLocation("recipe_book/page_backward_highlighted"));
+
     protected final List<ArcaneRecipeButton> buttons = new ArrayList<>(ITEMS_PER_PAGE);
     protected final OverlayArcaneRecipeComponent overlay = new OverlayArcaneRecipeComponent();
     protected final List<RecipeShownListener> showListeners = new ArrayList<>();
@@ -36,10 +41,11 @@ public class ArcaneRecipeBookPage {
     protected StateSwitchingButton backButton;
     protected int totalPages;
     protected int currentPage;
+    protected boolean isLoading = true;
     protected RecipeBook vanillaBook;
     protected ArcaneRecipeBook arcaneBook;
     @Nullable
-    protected Recipe<?> lastClickedRecipe;
+    protected RecipeHolder<?> lastClickedRecipe;
     @Nullable
     protected ArcaneRecipeCollection lastClickedRecipeCollection;
 
@@ -56,12 +62,14 @@ public class ArcaneRecipeBookPage {
         
         for (int index = 0; index < this.buttons.size(); index++) {
             this.buttons.get(index).setPosition(xPos + 11 + 25 * (index % 5), yPos + 31 + 25 * (index / 5));
+            this.buttons.get(index).visible = false;
         }
         
         this.forwardButton = new StateSwitchingButton(xPos + 93, yPos + 137, 12, 17, false);
-        this.forwardButton.initTextureValues(1, 208, 13, 18, ArcaneRecipeBookComponent.RECIPE_BOOK_LOCATION);
+        this.forwardButton.initTextureValues(PAGE_FORWARD_SPRITES);
         this.backButton = new StateSwitchingButton(xPos + 38, yPos + 137, 12, 17, true);
-        this.backButton.initTextureValues(1, 208, 13, 18, ArcaneRecipeBookComponent.RECIPE_BOOK_LOCATION);
+        this.backButton.initTextureValues(PAGE_BACKWARD_SPRITES);
+        this.updateArrowButtons();
     }
     
     public void addListener(ArcaneRecipeBookComponent component) {
@@ -75,6 +83,7 @@ public class ArcaneRecipeBookPage {
         if (this.totalPages <= this.currentPage || resetPage) {
             this.currentPage = 0;
         }
+        this.isLoading = false;
         this.updateButtonsForPage();
     }
     
@@ -98,35 +107,41 @@ public class ArcaneRecipeBookPage {
         this.backButton.visible = this.totalPages > 1 && this.currentPage > 0;
     }
     
-    public void render(PoseStack poseStack, int parentX, int parentY, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics guiGraphics, int parentX, int parentY, int mouseX, int mouseY, float partialTicks) {
         if (this.totalPages > 1) {
             String str = (this.currentPage + 1) + "/" + this.totalPages;
             int width = this.mc.font.width(str);
-            this.mc.font.draw(poseStack, str, (float)(parentX - width / 2 + 73), (float)(parentY + 141), -1);
+            guiGraphics.drawString(this.mc.font, str, parentX - width / 2 + 73, parentY + 141, -1);
+        }
+        
+        if (this.isLoading) {
+            Component loadingComponent = Component.translatable("label.primalmagick.recipe_book.loading");
+            int loadingWidth = this.mc.font.width(loadingComponent);
+            guiGraphics.drawString(this.mc.font, loadingComponent, parentX - loadingWidth / 2 + 73, parentY + 77, -1);
         }
         
         this.hoveredButton = null;
         
         for (ArcaneRecipeButton button : this.buttons) {
-            button.render(poseStack, mouseX, mouseY, partialTicks);
+            button.render(guiGraphics, mouseX, mouseY, partialTicks);
             if (button.visible && button.isHoveredOrFocused()) {
                 this.hoveredButton = button;
             }
         }
         
-        this.backButton.render(poseStack, mouseX, mouseY, partialTicks);
-        this.forwardButton.render(poseStack, mouseX, mouseY, partialTicks);
-        this.overlay.render(poseStack, mouseX, mouseY, partialTicks);
+        this.backButton.render(guiGraphics, mouseX, mouseY, partialTicks);
+        this.forwardButton.render(guiGraphics, mouseX, mouseY, partialTicks);
+        this.overlay.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
     
-    public void renderTooltip(PoseStack poseStack, int mouseX, int mouseY) {
+    public void renderTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (this.mc.screen != null && this.hoveredButton != null && !this.overlay.isVisible()) {
-            this.mc.screen.renderComponentTooltip(poseStack, this.hoveredButton.getTooltipText(this.mc.screen), mouseX, mouseY, this.hoveredButton.getRecipe().getResultItem());
+            guiGraphics.renderComponentTooltip(this.mc.font, this.hoveredButton.getTooltipText(this.mc.screen), mouseX, mouseY, this.hoveredButton.getRecipe().value().getResultItem(this.mc.level.registryAccess()));
         }
     }
     
     @Nullable
-    public Recipe<?> getLastClickedRecipe() {
+    public RecipeHolder<?> getLastClickedRecipe() {
         return this.lastClickedRecipe;
     }
     
@@ -165,7 +180,7 @@ public class ArcaneRecipeBookPage {
                         this.lastClickedRecipe = recipeButton.getRecipe();
                         this.lastClickedRecipeCollection = recipeButton.getCollection();
                     } else if (button == 1 && !this.overlay.isVisible() && !recipeButton.isOnlyOption()) {
-                        this.overlay.init(this.mc, recipeButton.getCollection(), this.arcaneBook, recipeButton.x, recipeButton.y, xPos + width / 2, yPos + 13 + height / 2, (float)recipeButton.getWidth());
+                        this.overlay.init(this.mc, recipeButton.getCollection(), this.arcaneBook, recipeButton.getX(), recipeButton.getY(), xPos + width / 2, yPos + 13 + height / 2, (float)recipeButton.getWidth());
                     }
                     return true;
                 }
@@ -174,7 +189,7 @@ public class ArcaneRecipeBookPage {
         }
     }
     
-    public void recipesShown(List<Recipe<?>> recipes) {
+    public void recipesShown(List<RecipeHolder<?>> recipes) {
         for (RecipeShownListener listener : this.showListeners) {
             listener.recipesShown(recipes);
         }

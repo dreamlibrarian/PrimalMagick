@@ -13,13 +13,12 @@ import com.verdantartifice.primalmagick.common.wands.WandGem;
 
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.IItemRenderProperties;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 /**
  * Item definition for a modular staff.  Modular staves are made up of cores, caps, and gems, and their
@@ -46,12 +45,12 @@ public class ModularStaffItem extends ModularWandItem implements IStaff {
     public Component getName(ItemStack stack) {
         // A modular staff's display name is determined by its components (e.g. "Apprentice's Iron-Shod Heartwood Staff")
         WandCore core = this.getWandCore(stack);
-        Component coreName = (core == null) ? new TranslatableComponent("primalmagick.wand_core.unknown.name") : new TranslatableComponent(core.getNameTranslationKey());
+        Component coreName = (core == null) ? Component.translatable("wand_core.primalmagick.unknown") : Component.translatable(core.getNameTranslationKey());
         WandCap cap = this.getWandCap(stack);
-        Component capName = (cap == null) ? new TranslatableComponent("primalmagick.wand_cap.unknown.name") : new TranslatableComponent(cap.getNameTranslationKey());
+        Component capName = (cap == null) ? Component.translatable("wand_cap.primalmagick.unknown") : Component.translatable(cap.getNameTranslationKey());
         WandGem gem = this.getWandGem(stack);
-        Component gemName = (gem == null) ? new TranslatableComponent("primalmagick.wand_gem.unknown.name") : new TranslatableComponent(gem.getNameTranslationKey());
-        return new TranslatableComponent("item.primalmagick.modular_staff", gemName, capName, coreName);
+        Component gemName = (gem == null) ? Component.translatable("wand_gem.primalmagick.unknown") : Component.translatable(gem.getNameTranslationKey());
+        return Component.translatable("item.primalmagick.modular_staff", gemName, capName, coreName);
     }
     
     @Override
@@ -67,12 +66,12 @@ public class ModularStaffItem extends ModularWandItem implements IStaff {
     }
 
     @Override
-    public void initializeClient(Consumer<IItemRenderProperties> consumer) {
-        consumer.accept(new IItemRenderProperties() {
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
             final BlockEntityWithoutLevelRenderer renderer = new ModularStaffISTER();
 
             @Override
-            public BlockEntityWithoutLevelRenderer getItemStackRenderer() {
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
                 return renderer;
             }
         });

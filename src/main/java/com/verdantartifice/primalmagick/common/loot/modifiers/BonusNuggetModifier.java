@@ -1,20 +1,26 @@
 package com.verdantartifice.primalmagick.common.loot.modifiers;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
-import com.google.gson.JsonObject;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.verdantartifice.primalmagick.common.enchantments.EnchantmentsPM;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraftforge.common.loot.GlobalLootModifierSerializer;
+import net.minecraftforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.common.loot.LootModifier;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Global loot modifier that gives a chance for bonus nuggets when mining quartz or metal ores.
@@ -22,51 +28,41 @@ import net.minecraftforge.common.loot.LootModifier;
  * @author Daedalus4096
  */
 public class BonusNuggetModifier extends LootModifier {
+    public static final Codec<BonusNuggetModifier> CODEC = RecordCodecBuilder.create(inst -> LootModifier.codecStart(inst).and(inst.group(
+                Codec.unboundedMap(TagKey.codec(Registries.BLOCK), TagKey.codec(Registries.ITEM)).fieldOf("nuggetMap").forGetter(m -> m.nuggetMap),
+                Codec.FLOAT.fieldOf("chance").forGetter(m -> m.chance)
+            )).apply(inst, BonusNuggetModifier::new));
+
     protected final float chance;
-    protected final Item nugget;
+    protected final Map<TagKey<Block>, TagKey<Item>> nuggetMap;
     
-    public BonusNuggetModifier(LootItemCondition[] conditions, float chance, Item nugget) {
+    public BonusNuggetModifier(LootItemCondition[] conditions, Map<TagKey<Block>, TagKey<Item>> nuggetMap, float chance) {
         super(conditions);
+        this.nuggetMap = nuggetMap;
         this.chance = chance;
-        this.nugget = nugget;
     }
 
     @Override
-    protected List<ItemStack> doApply(List<ItemStack> generatedLoot, LootContext context) {
-        int count = 0;
-        int enchantmentLevel = EnchantmentHelper.getItemEnchantmentLevel(EnchantmentsPM.LUCKY_STRIKE.get(), context.getParamOrNull(LootContextParams.TOOL));
-        for (int index = 0; index < enchantmentLevel; index++) {
-            if (context.getRandom().nextFloat() < this.chance) {
-                count++;
-            }
-        }
-        if (count > 0) {
-            generatedLoot.add(new ItemStack(this.nugget, count));
+    protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
+        BlockState state = context.getParamOrNull(LootContextParams.BLOCK_STATE);
+        ItemStack tool = context.getParamOrNull(LootContextParams.TOOL);
+        int enchantmentLevel = tool == null ? 0 : tool.getEnchantmentLevel(EnchantmentsPM.LUCKY_STRIKE.get());
+        if (state != null && enchantmentLevel > 0) {
+            this.nuggetMap.forEach((blockTag, itemTag) -> {
+                if (state.is(blockTag) && ForgeRegistries.ITEMS.tags().isKnownTagName(itemTag)) {
+                    Optional<Item> nuggetOpt = ForgeRegistries.ITEMS.tags().getTag(itemTag).stream().findFirst();
+                    nuggetOpt.ifPresent(nugget -> {
+                        int nuggetCount = IntStream.range(0, enchantmentLevel).map(i -> context.getRandom().nextFloat() < this.chance ? 1 : 0).sum();
+                        generatedLoot.add(new ItemStack(nugget, nuggetCount));
+                    });
+                }
+            });
         }
         return generatedLoot;
     }
 
-    public static class Serializer extends GlobalLootModifierSerializer<BonusNuggetModifier> {
-        @Override
-        public BonusNuggetModifier read(ResourceLocation location, JsonObject object, LootItemCondition[] ailootcondition) {
-            float chance = object.getAsJsonPrimitive("chance").getAsFloat();
-            Item nugget = GsonHelper.getAsItem(object, "nugget");
-            return new BonusNuggetModifier(ailootcondition, chance, nugget);
-        }
-
-        @Override
-        public JsonObject write(BonusNuggetModifier instance) {
-            JsonObject obj = this.makeConditions(instance.conditions);
-            obj.addProperty("chance", instance.chance);
-            
-            ResourceLocation nuggetLoc = instance.nugget.getRegistryName();
-            if (nuggetLoc == null) {
-                throw new IllegalArgumentException("Invalid nugget " + instance.nugget);
-            } else {
-                obj.addProperty("nugget", nuggetLoc.toString());
-            }
-            
-            return obj;
-        }
+    @Override
+    public Codec<? extends IGlobalLootModifier> codec() {
+        return CODEC;
     }
 }

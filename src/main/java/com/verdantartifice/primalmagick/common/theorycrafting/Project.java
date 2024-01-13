@@ -7,7 +7,9 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.verdantartifice.primalmagick.common.capabilities.IPlayerKnowledge.KnowledgeType;
+import com.verdantartifice.primalmagick.common.config.Config;
+import com.verdantartifice.primalmagick.common.research.KnowledgeType;
+import com.verdantartifice.primalmagick.common.theorycrafting.rewards.AbstractReward;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -29,15 +31,18 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class Project implements INBTSerializable<CompoundTag> {
     protected ResourceLocation templateKey;
     protected List<AbstractProjectMaterial> activeMaterials = new ArrayList<>();
+    protected List<AbstractReward> otherRewards = new ArrayList<>();
     protected double baseSuccessChance;
     protected double baseRewardMultiplier;
     protected ResourceLocation aidBlock;
     
     public Project() {}
     
-    public Project(@Nonnull ResourceLocation templateKey, @Nonnull List<AbstractProjectMaterial> materials, double baseSuccessChance, double baseRewardMultiplier, @Nullable ResourceLocation aidBlock) {
+    public Project(@Nonnull ResourceLocation templateKey, @Nonnull List<AbstractProjectMaterial> materials, @Nonnull List<AbstractReward> otherRewards, double baseSuccessChance, 
+            double baseRewardMultiplier, @Nullable ResourceLocation aidBlock) {
         this.templateKey = templateKey;
         this.activeMaterials = materials;
+        this.otherRewards = otherRewards;
         this.baseSuccessChance = baseSuccessChance;
         this.baseRewardMultiplier = baseRewardMultiplier;
         this.aidBlock = aidBlock;
@@ -58,6 +63,12 @@ public class Project implements INBTSerializable<CompoundTag> {
             materialList.add(material.serializeNBT());
         }
         retVal.put("Materials", materialList);
+        
+        ListTag rewardList = new ListTag();
+        for (AbstractReward reward : this.otherRewards) {
+            rewardList.add(reward.serializeNBT());
+        }
+        retVal.put("OtherRewards", rewardList);
         
         return retVal;
     }
@@ -81,21 +92,35 @@ public class Project implements INBTSerializable<CompoundTag> {
                 this.activeMaterials.add(material);
             }
         }
+        
+        this.otherRewards.clear();
+        ListTag rewardList = nbt.getList("OtherRewards", Tag.TAG_COMPOUND);
+        for (int index = 0; index < rewardList.size(); index++) {
+            AbstractReward reward = ProjectFactory.getRewardFromNBT(rewardList.getCompound(index));
+            if (reward != null) {
+                this.otherRewards.add(reward);
+            }
+        }
     }
 
     @Nonnull
     public String getNameTranslationKey() {
-        return this.templateKey.getNamespace() + ".research_project.name." + this.templateKey.getPath();
+        return String.join(".", "research_project", this.templateKey.getNamespace(), this.templateKey.getPath(), "name");
     }
     
     @Nonnull
     public String getTextTranslationKey() {
-        return this.templateKey.getNamespace() + ".research_project.text." + this.templateKey.getPath();
+        return String.join(".", "research_project", this.templateKey.getNamespace(), this.templateKey.getPath(), "text");
     }
 
     @Nonnull
     public List<AbstractProjectMaterial> getMaterials() {
         return this.activeMaterials;
+    }
+    
+    @Nonnull
+    public List<AbstractReward> getOtherRewards() {
+        return this.otherRewards;
     }
     
     protected double getSuccessChancePerMaterial() {
@@ -141,7 +166,14 @@ public class Project implements INBTSerializable<CompoundTag> {
     }
     
     public int getTheoryPointReward() {
-        return (int)(KnowledgeType.THEORY.getProgression() * (this.baseRewardMultiplier + this.getMaterials().stream().filter(m -> m.isSelected()).mapToDouble(m -> m.getBonusReward()).sum()));
+        int value = (int)(KnowledgeType.THEORY.getProgression() * (this.baseRewardMultiplier + this.getMaterials().stream().filter(m -> m.isSelected()).mapToDouble(m -> m.getBonusReward()).sum()));
+        TheorycraftSpeed modifier = Config.THEORYCRAFT_SPEED.get();
+        if (modifier == TheorycraftSpeed.SLOW) {
+            value /= 2;
+        } else if (modifier == TheorycraftSpeed.FAST) {
+            value *= 2;
+        }
+        return value;
     }
     
     @Nullable

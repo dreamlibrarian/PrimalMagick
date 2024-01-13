@@ -13,6 +13,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
+import com.verdantartifice.primalmagick.common.theorycrafting.rewards.ExperienceReward;
+import com.verdantartifice.primalmagick.common.theorycrafting.rewards.IRewardSerializer;
+import com.verdantartifice.primalmagick.common.theorycrafting.rewards.ItemReward;
+import com.verdantartifice.primalmagick.common.theorycrafting.rewards.LootTableReward;
+import com.verdantartifice.primalmagick.common.theorycrafting.weights.ConstantWeight;
+import com.verdantartifice.primalmagick.common.theorycrafting.weights.IWeightFunctionSerializer;
+import com.verdantartifice.primalmagick.common.theorycrafting.weights.ProgressiveWeight;
 import com.verdantartifice.primalmagick.common.util.WeightedRandomBag;
 
 import net.minecraft.core.BlockPos;
@@ -20,6 +27,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Primary access point for theorycraft-related methods.  Also stores defined research projects in a
@@ -35,11 +43,30 @@ public class TheorycraftManager {
             .put(ExperienceProjectMaterial.TYPE, ExperienceProjectMaterial.SERIALIZER)
             .put(ObservationProjectMaterial.TYPE, ObservationProjectMaterial.SERIALIZER)
             .build();
+    protected static final Map<String, IRewardSerializer<?>> REWARD_SERIALIZERS = new ImmutableMap.Builder<String, IRewardSerializer<?>>()
+            .put(ExperienceReward.TYPE, ExperienceReward.SERIALIZER)
+            .put(ItemReward.TYPE, ItemReward.SERIALIZER)
+            .put(LootTableReward.TYPE, LootTableReward.SERIALIZER)
+            .build();
+    protected static final Map<String, IWeightFunctionSerializer<?>> WEIGHT_SERIALIZERS = new ImmutableMap.Builder<String, IWeightFunctionSerializer<?>>()
+            .put(ConstantWeight.TYPE, ConstantWeight.SERIALIZER)
+            .put(ProgressiveWeight.TYPE, ProgressiveWeight.SERIALIZER)
+            .build();
     protected static final Map<ResourceLocation, ProjectTemplate> TEMPLATES = new HashMap<>();
     
     @Nullable
     public static IProjectMaterialSerializer<?> getMaterialSerializer(@Nullable String type) {
         return MATERIAL_SERIALIZERS.get(type);
+    }
+    
+    @Nullable
+    public static IRewardSerializer<?> getRewardSerializer(@Nullable String type) {
+        return REWARD_SERIALIZERS.get(type);
+    }
+    
+    @Nullable
+    public static IWeightFunctionSerializer<?> getWeightFunctionSerializer(@Nullable String type) {
+        return WEIGHT_SERIALIZERS.get(type);
     }
     
     public static void clearAllTemplates() {
@@ -64,15 +91,16 @@ public class TheorycraftManager {
     public static Project createRandomProject(@Nonnull ServerPlayer player, @Nonnull BlockPos tablePos) {
         WeightedRandomBag<ProjectTemplate> templateBag = new WeightedRandomBag<>();
         for (ProjectTemplate template : TEMPLATES.values()) {
-            templateBag.add(template, 1);
+            templateBag.add(template, template.getWeight(player));
         }
         
         // Determine what blocks are nearby so that aid blocks can be checked
         Set<Block> nearby = new HashSet<>();
-        if (player.level.isAreaLoaded(tablePos, 5)) {
+        Level level = player.level();
+        if (level.isAreaLoaded(tablePos, 5)) {
             Iterable<BlockPos> positions = BlockPos.betweenClosed(tablePos.offset(-5, -5, -5), tablePos.offset(5, 5, 5));
             for (BlockPos pos : positions) {
-                nearby.add(player.level.getBlockState(pos).getBlock());
+                nearby.add(level.getBlockState(pos).getBlock());
             }
         }
         
@@ -99,7 +127,7 @@ public class TheorycraftManager {
     @Nonnull
     public static Set<Block> getNearbyAidBlocks(Level level, BlockPos pos) {
         Set<ResourceLocation> allAids = getAllAidBlockIds();
-        return getSurroundingsInner(level, pos, b -> allAids.contains(b.getRegistryName()));
+        return getSurroundingsInner(level, pos, b -> allAids.contains(ForgeRegistries.BLOCKS.getKey(b)));
     }
     
     @Nonnull

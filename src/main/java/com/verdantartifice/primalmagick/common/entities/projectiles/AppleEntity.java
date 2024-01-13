@@ -5,8 +5,6 @@ import com.verdantartifice.primalmagick.common.entities.EntityTypesPM;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
@@ -15,7 +13,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Definition for a thrown apple entity.  Thrown by treefolk.  Does light damage on impact.
@@ -52,7 +49,7 @@ public class AppleEntity extends ThrowableItemProjectile {
         if (id == 3) {
             ParticleOptions particleData = this.makeParticle();
             for (int index = 0; index < 8; index++) {
-                this.level.addParticle(particleData, this.getX(), this.getY(), this.getZ(), 0.0D, 0.0D, 0.0D);
+                this.level().addParticle(particleData, this.getX(), this.getY(), this.getZ(), 0.0D, 0.0D, 0.0D);
             }
         }
     }
@@ -60,20 +57,16 @@ public class AppleEntity extends ThrowableItemProjectile {
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
-        result.getEntity().hurt(DamageSource.thrown(this, this.getOwner()), 2.0F);
+        result.getEntity().hurt(this.level().damageSources().thrown(this, this.getOwner()), 2.0F);
     }
 
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (!this.level.isClientSide) {
-            this.level.broadcastEntityEvent(this, (byte)3);
+        Level level = this.level();
+        if (!level.isClientSide) {
+            level.broadcastEntityEvent(this, (byte)3);
             this.discard();
         }
-    }
-
-    @Override
-    public Packet<?> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

@@ -9,13 +9,21 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.IResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchKeyFactory;
 import com.verdantartifice.primalmagick.common.stats.StatsManager;
 import com.verdantartifice.primalmagick.common.stats.StatsPM;
+import com.verdantartifice.primalmagick.common.theorycrafting.rewards.AbstractReward;
+import com.verdantartifice.primalmagick.common.theorycrafting.rewards.IRewardSerializer;
+import com.verdantartifice.primalmagick.common.theorycrafting.weights.IWeightFunction;
+import com.verdantartifice.primalmagick.common.theorycrafting.weights.IWeightFunctionSerializer;
 import com.verdantartifice.primalmagick.common.util.WeightedRandomBag;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -34,21 +42,26 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class ProjectTemplate {
     protected ResourceLocation key;
     protected List<AbstractProjectMaterial> materialOptions = new ArrayList<>();
-    protected SimpleResearchKey requiredResearch;
+    protected List<AbstractReward> otherRewards = new ArrayList<>();
+    protected IResearchKey requiredResearch;
     protected Optional<Integer> requiredMaterialCountOverride = Optional.empty();
     protected Optional<Double> baseSuccessChanceOverride = Optional.empty();
     protected double rewardMultiplier = 0.25D;
     protected List<ResourceLocation> aidBlocks = new ArrayList<>();
+    protected Optional<IWeightFunction> weightFunction = Optional.empty();
     
-    protected ProjectTemplate(@Nonnull ResourceLocation key, @Nonnull List<AbstractProjectMaterial> materialOptions, @Nullable SimpleResearchKey requiredResearch,
-            @Nonnull Optional<Integer> requiredMaterialCountOverride, @Nonnull Optional<Double> baseSuccessChanceOverride, double rewardMultiplier, @Nonnull List<ResourceLocation> aidBlocks) {
+    protected ProjectTemplate(@Nonnull ResourceLocation key, @Nonnull List<AbstractProjectMaterial> materialOptions, @Nonnull List<AbstractReward> otherRewards, @Nullable IResearchKey requiredResearch,
+            @Nonnull Optional<Integer> requiredMaterialCountOverride, @Nonnull Optional<Double> baseSuccessChanceOverride, double rewardMultiplier, @Nonnull List<ResourceLocation> aidBlocks,
+            @Nonnull Optional<IWeightFunction> weightFunction) {
         this.key = key;
         this.materialOptions = materialOptions;
+        this.otherRewards = otherRewards;
         this.requiredResearch = requiredResearch;
         this.requiredMaterialCountOverride = requiredMaterialCountOverride;
         this.baseSuccessChanceOverride = baseSuccessChanceOverride;
         this.rewardMultiplier = rewardMultiplier;
         this.aidBlocks = aidBlocks;
+        this.weightFunction = weightFunction;
     }
 
     public ResourceLocation getKey() {
@@ -58,6 +71,14 @@ public class ProjectTemplate {
     @Nullable
     public List<ResourceLocation> getAidBlocks() {
         return this.aidBlocks;
+    }
+    
+    public double getWeight(Player player) {
+        if (this.weightFunction.isPresent()) {
+            return this.weightFunction.get().getWeight(player);
+        } else {
+            return 1D;
+        }
     }
     
     @Nullable
@@ -70,7 +91,7 @@ public class ProjectTemplate {
         ResourceLocation foundAid = null;
         if (!this.aidBlocks.isEmpty()) {
             boolean found = false;
-            Set<ResourceLocation> nearbyIds = nearby.stream().map(b -> b.getRegistryName()).collect(Collectors.toUnmodifiableSet());
+            Set<ResourceLocation> nearbyIds = nearby.stream().map(b -> ForgeRegistries.BLOCKS.getKey(b)).collect(Collectors.toUnmodifiableSet());
             for (ResourceLocation aidBlock : this.aidBlocks) {
                 if (nearbyIds.contains(aidBlock)) {
                     found = true;
@@ -102,7 +123,7 @@ public class ProjectTemplate {
         }
         
         // Create new initialized project
-        return new Project(this.key, materials, this.getBaseSuccessChance(player), this.rewardMultiplier, foundAid);
+        return new Project(this.key, materials, this.otherRewards, this.getBaseSuccessChance(player), this.rewardMultiplier, foundAid);
     }
     
     protected int getRequiredMaterialCount(Player player) {
@@ -133,6 +154,8 @@ public class ProjectTemplate {
     }
     
     public static class Serializer implements IProjectTemplateSerializer {
+        private static final Logger LOGGER = LogManager.getLogger();
+        
         @Override
         public ProjectTemplate read(ResourceLocation templateId, JsonObject json) {
             String keyStr = json.getAsJsonPrimitive("key").getAsString();
@@ -141,9 +164,9 @@ public class ProjectTemplate {
             }
             ResourceLocation key = new ResourceLocation(keyStr);
             
-            SimpleResearchKey requiredResearch = null;
+            IResearchKey requiredResearch = null;
             if (json.has("required_research")) {
-                requiredResearch = SimpleResearchKey.parse(json.getAsJsonPrimitive("required_research").getAsString());
+                requiredResearch = ResearchKeyFactory.parse(json.getAsJsonPrimitive("required_research").getAsString());
             }
             
             Optional<Integer> materialCountOverride = Optional.empty();
@@ -187,13 +210,40 @@ public class ProjectTemplate {
                 }
             }
             
-            return new ProjectTemplate(key, materials, requiredResearch, materialCountOverride, baseSuccessChanceOverride, rewardMultiplier, aidBlocks);
+            List<AbstractReward> otherRewards = new ArrayList<>();
+            if (json.has("other_rewards")) {
+                JsonArray rewardsArray = json.getAsJsonArray("other_rewards");
+                for (JsonElement rewardElement : rewardsArray) {
+                    try {
+                        JsonObject rewardObj = rewardElement.getAsJsonObject();
+                        IRewardSerializer<?> rewardSerializer = TheorycraftManager.getRewardSerializer(rewardObj.getAsJsonPrimitive("type").getAsString());
+                        otherRewards.add(rewardSerializer.read(templateId, rewardObj));
+                    } catch (Exception e) {
+                        throw new JsonSyntaxException("Invalid reward in project template JSON for " + templateId.toString(), e);
+                    }
+                }
+            }
+            
+            Optional<IWeightFunction> weightOpt = Optional.empty();
+            if (json.has("weight_function")) {
+                JsonObject weightObj = json.getAsJsonObject("weight_function");
+                String functionType = weightObj.getAsJsonPrimitive("type").getAsString();
+                IWeightFunctionSerializer<?> serializer = TheorycraftManager.getWeightFunctionSerializer(functionType);
+                if (serializer != null) {
+                    weightOpt = Optional.ofNullable(serializer.read(templateId, weightObj));
+                } else {
+                    LOGGER.warn("Unknown weight function type {} in JSON for project template {}", functionType, templateId.toString());
+                    weightOpt = Optional.empty();
+                }
+            }
+            
+            return new ProjectTemplate(key, materials, otherRewards, requiredResearch, materialCountOverride, baseSuccessChanceOverride, rewardMultiplier, aidBlocks, weightOpt);
         }
 
         @Override
         public ProjectTemplate fromNetwork(FriendlyByteBuf buf) {
             ResourceLocation key = buf.readResourceLocation();
-            SimpleResearchKey requiredResearch = buf.readBoolean() ? SimpleResearchKey.parse(buf.readUtf()) : null;
+            IResearchKey requiredResearch = buf.readBoolean() ? ResearchKeyFactory.parse(buf.readUtf()) : null;
             Optional<Integer> materialCountOverride = buf.readBoolean() ? Optional.of(buf.readVarInt()) : Optional.empty();
             Optional<Double> baseSuccessChanceOverride = buf.readBoolean() ? Optional.of(buf.readDouble()) : Optional.empty();
             double rewardMultiplier = buf.readDouble();
@@ -216,7 +266,33 @@ public class ProjectTemplate {
                 }
             }
             
-            return new ProjectTemplate(key, materials, requiredResearch, materialCountOverride, baseSuccessChanceOverride, rewardMultiplier, aidBlocks);
+            List<AbstractReward> rewards = new ArrayList<>();
+            int rewardCount = buf.readVarInt();
+            for (int index = 0; index < rewardCount; index++) {
+                String rewardType = buf.readUtf();
+                IRewardSerializer<?> serializer = TheorycraftManager.getRewardSerializer(rewardType);
+                if (serializer != null) {
+                    rewards.add(serializer.fromNetwork(buf));
+                } else {
+                    throw new IllegalArgumentException("Unknown theorycrafting project reward type " + rewardType);
+                }
+            }
+            
+            Optional<IWeightFunction> weightOpt;
+            if (buf.readBoolean()) {
+                String functionType = buf.readUtf();
+                IWeightFunctionSerializer<?> serializer = TheorycraftManager.getWeightFunctionSerializer(functionType);
+                if (serializer != null) {
+                    weightOpt = Optional.ofNullable(serializer.fromNetwork(buf));
+                } else {
+                    LOGGER.warn("Unknown weight function type {} from network for project template {}", functionType, key.toString());
+                    weightOpt = Optional.empty();
+                }
+            } else {
+                weightOpt = Optional.empty();
+            }
+            
+            return new ProjectTemplate(key, materials, rewards, requiredResearch, materialCountOverride, baseSuccessChanceOverride, rewardMultiplier, aidBlocks, weightOpt);
         }
 
         @Override
@@ -250,6 +326,18 @@ public class ProjectTemplate {
                 buf.writeUtf(material.getMaterialType());
                 material.toNetwork(buf);
             }
+            buf.writeVarInt(template.otherRewards.size());
+            for (AbstractReward reward : template.otherRewards) {
+                buf.writeUtf(reward.getRewardType());
+                reward.getSerializer().toNetwork(buf, reward);
+            }
+            template.weightFunction.ifPresentOrElse(weight -> {
+                buf.writeBoolean(true);
+                buf.writeUtf(weight.getFunctionType());
+                weight.getSerializer().toNetwork(buf, weight);
+            }, () -> {
+                buf.writeBoolean(false);
+            });
         }
     }
 }

@@ -1,0 +1,35 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "C": {
+      "item": "minecraft:crimson_planks"
+    },
+    "I": {
+      "tag": "primalmagick:ingots/hexium"
+    },
+    "P": {
+      "item": "primalmagick:magitech_parts_forbidden"
+    },
+    "R": {
+      "tag": "forge:dusts/redstone"
+    },
+    "S": {
+      "item": "primalmagick:essence_shard_void"
+    }
+  },
+  "mana": {
+    "sources": {
+      "void": 40
+    }
+  },
+  "pattern": [
+    "IPI",
+    "CSC",
+    "CRC"
+  ],
+  "research": "VOID_TURBINE",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:void_turbine"
+  }
+}

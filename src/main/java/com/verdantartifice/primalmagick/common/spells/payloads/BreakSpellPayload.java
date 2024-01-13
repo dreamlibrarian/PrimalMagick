@@ -5,7 +5,7 @@ import java.util.Map;
 import com.verdantartifice.primalmagick.common.enchantments.EnchantmentsPM;
 import com.verdantartifice.primalmagick.common.misc.BlockBreaker;
 import com.verdantartifice.primalmagick.common.research.CompoundResearchKey;
-import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
+import com.verdantartifice.primalmagick.common.research.ResearchNames;
 import com.verdantartifice.primalmagick.common.sources.Source;
 import com.verdantartifice.primalmagick.common.spells.SpellPackage;
 import com.verdantartifice.primalmagick.common.spells.SpellProperty;
@@ -17,7 +17,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -34,7 +33,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class BreakSpellPayload extends AbstractSpellPayload {
     public static final String TYPE = "break";
-    protected static final CompoundResearchKey RESEARCH = CompoundResearchKey.from(SimpleResearchKey.parse("SPELL_PAYLOAD_BREAK"));
+    protected static final CompoundResearchKey RESEARCH = ResearchNames.SPELL_PAYLOAD_BREAK.get().compoundKey();
 
     public BreakSpellPayload() {
         super();
@@ -52,8 +51,8 @@ public class BreakSpellPayload extends AbstractSpellPayload {
     @Override
     protected Map<String, SpellProperty> initProperties() {
         Map<String, SpellProperty> propMap = super.initProperties();
-        propMap.put("power", new SpellProperty("power", "primalmagick.spell.property.power", 1, 5));
-        propMap.put("silk_touch", new SpellProperty("silk_touch", "primalmagick.spell.property.silk_touch", 0, 1));
+        propMap.put("power", new SpellProperty("power", "spells.primalmagick.property.power", 1, 5));
+        propMap.put("silk_touch", new SpellProperty("silk_touch", "spells.primalmagick.property.silk_touch", 0, 1));
         return propMap;
     }
     
@@ -66,7 +65,7 @@ public class BreakSpellPayload extends AbstractSpellPayload {
             BlockState state = world.getBlockState(pos);
             float durability = (float)Math.sqrt(100.0F * state.getDestroySpeed(world, pos));
             boolean silk = (this.getPropertyValue("silk_touch") == 1);
-            int treasure = EnchantmentHelper.getItemEnchantmentLevel(EnchantmentsPM.TREASURE.get(), spellSource);
+            int treasure = spellSource.getEnchantmentLevel(EnchantmentsPM.TREASURE.get());
             BlockBreaker breaker = new BlockBreaker.Builder().power(this.getModdedPropertyValue("power", spell, spellSource)).target(pos, state).durability(durability).player((Player)caster).tool(spellSource).silkTouch(silk).fortune(treasure).alwaysDrop().build();
             BlockBreaker.schedule(world, 1, breaker);
         }

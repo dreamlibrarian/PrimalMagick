@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:copper_ore",
-  "base": "minecraft:stone",
-  "add": {
-    "earth": 10
-  }
-}

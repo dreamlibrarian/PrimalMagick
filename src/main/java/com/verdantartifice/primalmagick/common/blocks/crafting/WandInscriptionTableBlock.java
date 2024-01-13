@@ -1,11 +1,10 @@
 package com.verdantartifice.primalmagick.common.blocks.crafting;
 
-import com.verdantartifice.primalmagick.common.containers.WandInscriptionTableContainer;
+import com.verdantartifice.primalmagick.common.menus.WandInscriptionTableMenu;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -25,12 +24,12 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Block definition for the wand inscription table.  A wand inscription table allows a player to take a
@@ -42,7 +41,7 @@ public class WandInscriptionTableBlock extends Block {
     protected static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
     public WandInscriptionTableBlock() {
-        super(Block.Properties.of(Material.WOOD).strength(1.5F, 6.0F).sound(SoundType.WOOD).noOcclusion());
+        super(Block.Properties.of().mapColor(MapColor.WOOD).ignitedByLava().instrument(NoteBlockInstrument.BASS).strength(1.5F, 6.0F).sound(SoundType.WOOD).noOcclusion());
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
     
@@ -76,17 +75,17 @@ public class WandInscriptionTableBlock extends Block {
     
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        if (!worldIn.isClientSide && player instanceof ServerPlayer) {
+        if (!worldIn.isClientSide && player instanceof ServerPlayer serverPlayer) {
             // Open the GUI for the wand inscription table
-            NetworkHooks.openGui((ServerPlayer)player, new MenuProvider() {
+            serverPlayer.openMenu(new MenuProvider() {
                 @Override
                 public AbstractContainerMenu createMenu(int windowId, Inventory inv, Player player) {
-                    return new WandInscriptionTableContainer(windowId, inv, ContainerLevelAccess.create(worldIn, pos));
+                    return new WandInscriptionTableMenu(windowId, inv, ContainerLevelAccess.create(worldIn, pos));
                 }
 
                 @Override
                 public Component getDisplayName() {
-                    return new TranslatableComponent(WandInscriptionTableBlock.this.getDescriptionId());
+                    return Component.translatable(WandInscriptionTableBlock.this.getDescriptionId());
                 }
             });
         }

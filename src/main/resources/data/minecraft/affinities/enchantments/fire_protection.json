@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:fire_protection",
-  "multiplier": {
-    "infernal": 1
-  }
-}

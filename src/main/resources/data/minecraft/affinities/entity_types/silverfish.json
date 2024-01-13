@@ -1,8 +1,0 @@
-{
-  "type": "entity_type",
-  "target": "minecraft:silverfish",
-  "values": {
-    "earth": 5,
-    "blood": 5
-  }
-}

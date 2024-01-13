@@ -1,10 +1,24 @@
 package com.verdantartifice.primalmagick.datagen.loot_tables;
 
+import java.util.OptionalInt;
+
 import com.verdantartifice.primalmagick.common.blocks.BlocksPM;
 import com.verdantartifice.primalmagick.common.items.ItemsPM;
 
-import net.minecraft.data.DataGenerator;
+import net.minecraft.advancements.critereon.ItemPredicate;
+import net.minecraft.data.loot.LootTableProvider;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.storage.loot.entries.LootItem;
+import net.minecraft.world.level.storage.loot.functions.ApplyBonusCount;
+import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.predicates.MatchTool;
+import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
+import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
 
 /**
  * Data provider for all of the mod's block loot tables.
@@ -12,12 +26,8 @@ import net.minecraft.world.item.Items;
  * @author Daedalus4096
  */
 public class BlockLootTables extends AbstractBlockLootTableProvider {
-    public BlockLootTables(DataGenerator dataGeneratorIn) {
-        super(dataGeneratorIn);
-    }
-
     @Override
-    protected void addTables() {
+    protected void generate() {
         // Mark blocks as not having a loot table
         this.registerEmptyLootTables();
         
@@ -29,10 +39,12 @@ public class BlockLootTables extends AbstractBlockLootTableProvider {
         this.registerSunwoodLootTables();
         this.registerMoonwoodLootTables();
         this.registerHallowoodLootTables();
+        this.registerCropLootTables();
         this.registerInfusedStoneLootTables();
         this.registerSkyglassLootTables();
         this.registerRitualCandleLootTables();
         this.registerManaFontLootTables();
+        this.registerBuddingGemLootTables();
         
         // Register device loot tables
         this.registerBasicTable(BlocksPM.ARCANE_WORKBENCH.get());
@@ -74,6 +86,16 @@ public class BlockLootTables extends AbstractBlockLootTableProvider {
         this.registerBasicTable(BlocksPM.AUTO_CHARGER.get());
         this.registerManaBearingDeviceTable(BlocksPM.ESSENCE_TRANSMUTER.get());
         this.registerManaBearingDeviceTable(BlocksPM.DISSOLUTION_CHAMBER.get());
+        this.registerBasicTable(BlocksPM.ZEPHYR_ENGINE.get());
+        this.registerBasicTable(BlocksPM.VOID_TURBINE.get());
+        this.registerBasicTable(BlocksPM.ESSENCE_CASK_ENCHANTED.get());
+        this.registerBasicTable(BlocksPM.ESSENCE_CASK_FORBIDDEN.get());
+        this.registerBasicTable(BlocksPM.ESSENCE_CASK_HEAVENLY.get());
+        this.registerBasicTable(BlocksPM.WAND_GLAMOUR_TABLE.get());
+        this.registerManaBearingDeviceTable(BlocksPM.INFERNAL_FURNACE.get());
+        this.registerManaBearingDeviceTable(BlocksPM.MANA_NEXUS.get());
+        this.registerManaBearingDeviceTable(BlocksPM.MANA_SINGULARITY.get());
+        this.registerBasicTable(BlocksPM.MANA_SINGULARITY_CREATIVE.get());
 
         // Register misc loot tables
         this.registerBasicTable(BlocksPM.SALT_TRAIL.get());
@@ -84,6 +106,8 @@ public class BlockLootTables extends AbstractBlockLootTableProvider {
         this.registerBasicTable(BlocksPM.HALLOWSTEEL_BLOCK.get());
         this.registerBasicTable(BlocksPM.IGNYX_BLOCK.get());
         this.registerBasicTable(BlocksPM.SALT_BLOCK.get());
+        this.registerBasicTable(BlocksPM.TREEFOLK_SPROUT.get());
+        this.registerBasicTable(BlocksPM.ENDERWARD.get());
     }
 
     private void registerEmptyLootTables() {
@@ -109,6 +133,7 @@ public class BlockLootTables extends AbstractBlockLootTableProvider {
         this.registerSlabTable(BlocksPM.MARBLE_SLAB.get());
         this.registerBasicTable(BlocksPM.MARBLE_STAIRS.get());
         this.registerBasicTable(BlocksPM.MARBLE_WALL.get());
+        this.registerBasicTable(BlocksPM.MARBLE_TILES.get());
     }
     
     private void registerEnchantedMarbleLootTables() {
@@ -190,6 +215,14 @@ public class BlockLootTables extends AbstractBlockLootTableProvider {
         this.registerSlabTable(BlocksPM.HALLOWOOD_SLAB.get());
         this.registerBasicTable(BlocksPM.HALLOWOOD_STAIRS.get());
         this.registerBasicTable(BlocksPM.HALLOWOOD_PILLAR.get());
+    }
+    
+    private void registerCropLootTables() {
+        this.registerSplittingTable(BlocksPM.HYDROMELON.get(), ItemsPM.HYDROMELON_SLICE.get(), UniformGenerator.between(3F, 7F), OptionalInt.of(9));
+        this.registerLootTableBuilder(BlocksPM.HYRDOMELON_STEM.get(), b -> this.createStemDrops(b, ItemsPM.HYDROMELON_SEEDS.get()));
+        this.registerLootTableBuilder(BlocksPM.ATTACHED_HYDROMELON_STEM.get(), b -> this.createAttachedStemDrops(b, ItemsPM.HYDROMELON_SEEDS.get()));
+        this.registerLootTableBuilder(BlocksPM.BLOOD_ROSE.get(), b -> this.createSinglePropConditionTable(b, BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER));
+        this.registerLootTableBuilder(BlocksPM.EMBERFLOWER.get(), b -> this.createSinglePropConditionTable(b, BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER));
     }
     
     private void registerInfusedStoneLootTables() {
@@ -286,9 +319,39 @@ public class BlockLootTables extends AbstractBlockLootTableProvider {
         this.registerBasicTable(BlocksPM.HEAVENLY_FONT_VOID.get());
         this.registerBasicTable(BlocksPM.HEAVENLY_FONT_HALLOWED.get());
     }
-
-    @Override
-    public String getName() {
-        return "Primal Magick Block Loot Tables";
+    
+    private void registerBuddingGemLootTables() {
+        this.registerLootTableBuilder(BlocksPM.SYNTHETIC_AMETHYST_CLUSTER.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.AMETHYST_SHARD).apply(SetItemCountFunction.setCount(ConstantValue.exactly(4.0F))).apply(ApplyBonusCount.addOreBonusCount(Enchantments.BLOCK_FORTUNE)).when(MatchTool.toolMatches(ItemPredicate.Builder.item().of(ItemTags.CLUSTER_MAX_HARVESTABLES))).otherwise(this.applyExplosionDecay(b, LootItem.lootTableItem(Items.AMETHYST_SHARD).apply(SetItemCountFunction.setCount(ConstantValue.exactly(2.0F)))))));
+        this.dropWhenSilkTouch(BlocksPM.LARGE_SYNTHETIC_AMETHYST_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.MEDIUM_SYNTHETIC_AMETHYST_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.SMALL_SYNTHETIC_AMETHYST_BUD.get());
+        this.registerLootTableBuilder(BlocksPM.DAMAGED_BUDDING_AMETHYST_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.AMETHYST_BLOCK)));
+        this.registerLootTableBuilder(BlocksPM.CHIPPED_BUDDING_AMETHYST_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.DAMAGED_BUDDING_AMETHYST_BLOCK.get())));
+        this.registerLootTableBuilder(BlocksPM.FLAWED_BUDDING_AMETHYST_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.CHIPPED_BUDDING_AMETHYST_BLOCK.get())));
+        this.registerLootTableBuilder(BlocksPM.SYNTHETIC_DIAMOND_CLUSTER.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.DIAMOND).apply(SetItemCountFunction.setCount(ConstantValue.exactly(4.0F))).apply(ApplyBonusCount.addOreBonusCount(Enchantments.BLOCK_FORTUNE)).when(MatchTool.toolMatches(ItemPredicate.Builder.item().of(ItemTags.CLUSTER_MAX_HARVESTABLES))).otherwise(this.applyExplosionDecay(b, LootItem.lootTableItem(Items.DIAMOND).apply(SetItemCountFunction.setCount(ConstantValue.exactly(2.0F)))))));
+        this.dropWhenSilkTouch(BlocksPM.LARGE_SYNTHETIC_DIAMOND_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.MEDIUM_SYNTHETIC_DIAMOND_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.SMALL_SYNTHETIC_DIAMOND_BUD.get());
+        this.registerLootTableBuilder(BlocksPM.DAMAGED_BUDDING_DIAMOND_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.DIAMOND_BLOCK)));
+        this.registerLootTableBuilder(BlocksPM.CHIPPED_BUDDING_DIAMOND_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.DAMAGED_BUDDING_DIAMOND_BLOCK.get())));
+        this.registerLootTableBuilder(BlocksPM.FLAWED_BUDDING_DIAMOND_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.CHIPPED_BUDDING_DIAMOND_BLOCK.get())));
+        this.registerLootTableBuilder(BlocksPM.SYNTHETIC_EMERALD_CLUSTER.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.EMERALD).apply(SetItemCountFunction.setCount(ConstantValue.exactly(4.0F))).apply(ApplyBonusCount.addOreBonusCount(Enchantments.BLOCK_FORTUNE)).when(MatchTool.toolMatches(ItemPredicate.Builder.item().of(ItemTags.CLUSTER_MAX_HARVESTABLES))).otherwise(this.applyExplosionDecay(b, LootItem.lootTableItem(Items.EMERALD).apply(SetItemCountFunction.setCount(ConstantValue.exactly(2.0F)))))));
+        this.dropWhenSilkTouch(BlocksPM.LARGE_SYNTHETIC_EMERALD_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.MEDIUM_SYNTHETIC_EMERALD_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.SMALL_SYNTHETIC_EMERALD_BUD.get());
+        this.registerLootTableBuilder(BlocksPM.DAMAGED_BUDDING_EMERALD_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.EMERALD_BLOCK)));
+        this.registerLootTableBuilder(BlocksPM.CHIPPED_BUDDING_EMERALD_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.DAMAGED_BUDDING_EMERALD_BLOCK.get())));
+        this.registerLootTableBuilder(BlocksPM.FLAWED_BUDDING_EMERALD_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.CHIPPED_BUDDING_EMERALD_BLOCK.get())));
+        this.registerLootTableBuilder(BlocksPM.SYNTHETIC_QUARTZ_CLUSTER.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.QUARTZ).apply(SetItemCountFunction.setCount(ConstantValue.exactly(4.0F))).apply(ApplyBonusCount.addOreBonusCount(Enchantments.BLOCK_FORTUNE)).when(MatchTool.toolMatches(ItemPredicate.Builder.item().of(ItemTags.CLUSTER_MAX_HARVESTABLES))).otherwise(this.applyExplosionDecay(b, LootItem.lootTableItem(Items.QUARTZ).apply(SetItemCountFunction.setCount(ConstantValue.exactly(2.0F)))))));
+        this.dropWhenSilkTouch(BlocksPM.LARGE_SYNTHETIC_QUARTZ_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.MEDIUM_SYNTHETIC_QUARTZ_BUD.get());
+        this.dropWhenSilkTouch(BlocksPM.SMALL_SYNTHETIC_QUARTZ_BUD.get());
+        this.registerLootTableBuilder(BlocksPM.DAMAGED_BUDDING_QUARTZ_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(Items.QUARTZ_BLOCK)));
+        this.registerLootTableBuilder(BlocksPM.CHIPPED_BUDDING_QUARTZ_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.DAMAGED_BUDDING_QUARTZ_BLOCK.get())));
+        this.registerLootTableBuilder(BlocksPM.FLAWED_BUDDING_QUARTZ_BLOCK.get(), b -> createSilkTouchDispatchTable(b, LootItem.lootTableItem(ItemsPM.CHIPPED_BUDDING_QUARTZ_BLOCK.get())));
+    }
+    
+    public static LootTableProvider.SubProviderEntry getSubProviderEntry() {
+        return new LootTableProvider.SubProviderEntry(BlockLootTables::new, LootContextParamSets.BLOCK);
     }
 }

@@ -1,21 +1,18 @@
 package com.verdantartifice.primalmagick.common.crafting;
 
-import com.google.gson.JsonObject;
-import com.verdantartifice.primalmagick.common.sources.Source;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
-import com.verdantartifice.primalmagick.common.util.JsonUtils;
 
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.registries.ForgeRegistryEntry;
 
 /**
  * Definition for a dissolution recipe.  Similar to a smelting recipe, but used by the dissolution chamber
@@ -24,14 +21,12 @@ import net.minecraftforge.registries.ForgeRegistryEntry;
  * @author Daedalus4096
  */
 public class DissolutionRecipe implements IDissolutionRecipe {
-    protected final ResourceLocation id;
     protected final String group;
     protected final Ingredient ingredient;
     protected final ItemStack result;
     protected final SourceList manaCosts;
     
-    public DissolutionRecipe(ResourceLocation id, String group, Ingredient ingredient, ItemStack result, SourceList manaCosts) {
-        this.id = id;
+    public DissolutionRecipe(String group, Ingredient ingredient, ItemStack result, SourceList manaCosts) {
         this.group = group;
         this.ingredient = ingredient;
         this.result = result;
@@ -44,7 +39,7 @@ public class DissolutionRecipe implements IDissolutionRecipe {
     }
 
     @Override
-    public ItemStack assemble(Container inv) {
+    public ItemStack assemble(Container inv, RegistryAccess registryAccess) {
         return this.result.copy();
     }
 
@@ -61,13 +56,8 @@ public class DissolutionRecipe implements IDissolutionRecipe {
     }
 
     @Override
-    public ItemStack getResultItem() {
+    public ItemStack getResultItem(RegistryAccess registryAccess) {
         return this.result;
-    }
-
-    @Override
-    public ResourceLocation getId() {
-        return this.id;
     }
 
     @Override
@@ -85,34 +75,34 @@ public class DissolutionRecipe implements IDissolutionRecipe {
         return this.group;
     }
 
-    public static class Serializer extends ForgeRegistryEntry<RecipeSerializer<?>> implements RecipeSerializer<DissolutionRecipe> {
+    public static class Serializer implements RecipeSerializer<DissolutionRecipe> {
+        protected static final Codec<DissolutionRecipe> CODEC = RecordCodecBuilder.create(instance -> {
+            return instance.group(
+                    ExtraCodecs.strictOptionalField(Codec.STRING, "group", "").forGetter(dr -> dr.group),
+                    Ingredient.CODEC_NONEMPTY.fieldOf("ingredient").forGetter(dr -> dr.ingredient),
+                    ItemStack.CODEC.fieldOf("result").forGetter(dr -> dr.result),
+                    SourceList.CODEC.optionalFieldOf("mana", SourceList.EMPTY).forGetter(dr -> dr.manaCosts)
+                ).apply(instance, DissolutionRecipe::new);
+        });
+        
         @Override
-        public DissolutionRecipe fromJson(ResourceLocation recipeId, JsonObject json) {
-            String group = GsonHelper.getAsString(json, "group", "");
-            SourceList manaCosts = JsonUtils.toSourceList(GsonHelper.getAsJsonObject(json, "mana", new JsonObject()));
-            ItemStack result = CraftingHelper.getItemStack(GsonHelper.getAsJsonObject(json, "result"), true);
-            Ingredient ing = Ingredient.fromJson(GsonHelper.getAsJsonObject(json, "ingredient"));
-            return new DissolutionRecipe(recipeId, group, ing, result, manaCosts);
+        public Codec<DissolutionRecipe> codec() {
+            return CODEC;
         }
 
         @Override
-        public DissolutionRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf buffer) {
+        public DissolutionRecipe fromNetwork(FriendlyByteBuf buffer) {
             String group = buffer.readUtf();
-            SourceList manaCosts = new SourceList();
-            for (int index = 0; index < Source.SORTED_SOURCES.size(); index++) {
-                manaCosts.add(Source.SORTED_SOURCES.get(index), buffer.readVarInt());
-            }
+            SourceList manaCosts = SourceList.fromNetwork(buffer);
             Ingredient ing = Ingredient.fromNetwork(buffer);
             ItemStack result = buffer.readItem();
-            return new DissolutionRecipe(recipeId, group, ing, result, manaCosts);
+            return new DissolutionRecipe(group, ing, result, manaCosts);
         }
 
         @Override
         public void toNetwork(FriendlyByteBuf buffer, DissolutionRecipe recipe) {
             buffer.writeUtf(recipe.group);
-            for (Source source : Source.SORTED_SOURCES) {
-                buffer.writeVarInt(recipe.manaCosts.getAmount(source));
-            }
+            SourceList.toNetwork(buffer, recipe.manaCosts);
             recipe.ingredient.toNetwork(buffer);
             buffer.writeItem(recipe.result);
         }

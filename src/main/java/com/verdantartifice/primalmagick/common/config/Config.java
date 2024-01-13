@@ -4,6 +4,7 @@ import java.nio.file.Path;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.io.WritingMode;
+import com.verdantartifice.primalmagick.common.theorycrafting.TheorycraftSpeed;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -18,17 +19,21 @@ import net.minecraftforge.fml.loading.FMLPaths;
  */
 @Mod.EventBusSubscriber
 public class Config {
-    protected static final String CATEGORY_WORLDGEN = "worldgen";
     protected static final String CATEGORY_MISC = "misc";
+    protected static final String CATEGORY_RADIAL = "radial";
     
     protected static ForgeConfigSpec COMMON_CONFIG_SPEC;
     protected static ForgeConfigSpec CLIENT_CONFIG_SPEC;
     protected static boolean IS_REGISTERED = false;
     
     public static ForgeConfigSpec.BooleanValue SHOW_AFFINITIES;
+    public static ForgeConfigSpec.BooleanValue SHOW_WAND_HUD;
+    public static ForgeConfigSpec.BooleanValue RADIAL_RELEASE_TO_SWITCH;
+    public static ForgeConfigSpec.BooleanValue RADIAL_CLIP_MOUSE;
+    public static ForgeConfigSpec.BooleanValue RADIAL_ALLOW_CLICK_OUTSIDE_BOUNDS;
+    
     public static ForgeConfigSpec.BooleanValue SHOW_UNSCANNED_AFFINITIES;
-    public static ForgeConfigSpec.IntValue SHRINE_AVERAGE_DISTANCE_CHUNKS;
-    public static ForgeConfigSpec.IntValue SHRINE_MINIMUM_DISTANCE_CHUNKS;
+    public static ForgeConfigSpec.EnumValue<TheorycraftSpeed> THEORYCRAFT_SPEED;
     
     static {
         buildCommonConfigSpec();
@@ -39,13 +44,9 @@ public class Config {
         // Define the common config file spec
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         
-        builder.comment("Worldgen settings").push(CATEGORY_WORLDGEN);
-        SHRINE_AVERAGE_DISTANCE_CHUNKS = builder.comment("Average distance apart in chunks between shrine spawn attempts").defineInRange("shrineAverageDistanceChunks", 20, 1, 1000000);
-        SHRINE_MINIMUM_DISTANCE_CHUNKS = builder.comment("Minimum distance apart in chunks between shrine spawn attempts; must be less than average").defineInRange("shrineMinimumDistanceChunks", 10, 1, 1000000);
-        builder.pop();
-        
         builder.comment("Misc settings").push(CATEGORY_MISC);
         SHOW_UNSCANNED_AFFINITIES = builder.comment("Show affinities of blocks and items even without scanning them").define("showUnscannedAffinities", false);
+        THEORYCRAFT_SPEED = builder.comment("Progress rate modifier for Research Table theory yields").defineEnum("theorycraftSpeed", TheorycraftSpeed.NORMAL);
         builder.pop();
         
         COMMON_CONFIG_SPEC = builder.build();
@@ -57,6 +58,13 @@ public class Config {
         
         builder.comment("Misc settings").push(CATEGORY_MISC);
         SHOW_AFFINITIES = builder.comment("Item affinities are hidden by default and pressing shift reveals them.", "Setting this to 'true' will reverse this behavior.").define("showAffinities", false);
+        SHOW_WAND_HUD = builder.comment("Whether to show the wand HUD while a wand or staff is held in the main hand.").define("showWandHud", true);
+        builder.pop();
+        
+        builder.comment("Radial menu settings").push(CATEGORY_RADIAL);
+        RADIAL_RELEASE_TO_SWITCH = builder.comment("If true, releasing the menu key will activate the highlighted item; otherwise requires a click").define("releaseToSwitch", true);
+        RADIAL_CLIP_MOUSE = builder.comment("If true, the radial menu will try to prevent the mouse from leaving the outer circle").define("clipMouse", false);
+        RADIAL_ALLOW_CLICK_OUTSIDE_BOUNDS = builder.comment("If true, the radial menu will allow clicking outside the outer circle to activate the highlighted item").define("allowClickOutsideBounds", false);
         builder.pop();
         
         CLIENT_CONFIG_SPEC = builder.build();

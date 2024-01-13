@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:bane_of_arthropods",
-  "multiplier": {
-    "blood": 1
-  }
-}

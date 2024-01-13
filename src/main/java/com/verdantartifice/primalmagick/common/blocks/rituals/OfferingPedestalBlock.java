@@ -1,7 +1,6 @@
 package com.verdantartifice.primalmagick.common.blocks.rituals;
 
 import java.awt.Color;
-import java.util.Random;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
@@ -11,10 +10,9 @@ import com.verdantartifice.primalmagick.common.tiles.rituals.OfferingPedestalTil
 import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Containers;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -27,8 +25,8 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -40,10 +38,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * @author Daedalus4096
  */
 public class OfferingPedestalBlock extends BaseEntityBlock implements ISaltPowered, IRitualStabilizer {
-    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/offering_pedestal"));
+    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(PrimalMagick.resource("block/offering_pedestal"));
     
     public OfferingPedestalBlock() {
-        super(Block.Properties.of(Material.STONE, MaterialColor.QUARTZ).strength(1.5F, 6.0F).sound(SoundType.STONE));
+        super(Block.Properties.of().mapColor(MapColor.QUARTZ).instrument(NoteBlockInstrument.BASEDRUM).strength(1.5F, 6.0F).sound(SoundType.STONE).noOcclusion());
     }
     
     @Override
@@ -57,7 +55,7 @@ public class OfferingPedestalBlock extends BaseEntityBlock implements ISaltPower
     }
 
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show spell sparkles if receiving salt power
         if (this.isBlockSaltPowered(worldIn, pos)) {
             FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Color.WHITE.getRGB());
@@ -72,15 +70,14 @@ public class OfferingPedestalBlock extends BaseEntityBlock implements ISaltPower
     @SuppressWarnings("deprecation")
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        if (!worldIn.isClientSide && handIn == InteractionHand.MAIN_HAND) {
+        if (handIn == InteractionHand.MAIN_HAND) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof OfferingPedestalTileEntity) {
-                OfferingPedestalTileEntity pedestalTile = (OfferingPedestalTileEntity)tile;
-                if (pedestalTile.getItem(0).isEmpty() && !player.getItemInHand(handIn).isEmpty()) {
+            if (tile instanceof OfferingPedestalTileEntity pedestalTile) {
+                if (pedestalTile.getItem().isEmpty() && !player.getItemInHand(handIn).isEmpty()) {
                     // When activating an empty pedestal with an item in hand, place it on the pedestal
                     ItemStack stack = player.getItemInHand(handIn).copy();
                     stack.setCount(1);
-                    pedestalTile.setItem(0, stack);
+                    pedestalTile.setItem(stack);
                     player.getItemInHand(handIn).shrink(1);
                     if (player.getItemInHand(handIn).getCount() <= 0) {
                         player.setItemInHand(handIn, ItemStack.EMPTY);
@@ -88,10 +85,10 @@ public class OfferingPedestalBlock extends BaseEntityBlock implements ISaltPower
                     player.getInventory().setChanged();
                     worldIn.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
                     return InteractionResult.SUCCESS;
-                } else if (!pedestalTile.getItem(0).isEmpty() && player.getItemInHand(handIn).isEmpty()) {
+                } else if (!pedestalTile.getItem().isEmpty() && player.getItemInHand(handIn).isEmpty()) {
                     // When activating a full pedestal with an empty hand, pick up the item
-                    ItemStack stack = pedestalTile.getItem(0).copy();
-                    pedestalTile.setItem(0, ItemStack.EMPTY);
+                    ItemStack stack = pedestalTile.getItem().copy();
+                    pedestalTile.setItem(ItemStack.EMPTY);
                     player.setItemInHand(handIn, stack);
                     player.getInventory().setChanged();
                     worldIn.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
@@ -104,17 +101,24 @@ public class OfferingPedestalBlock extends BaseEntityBlock implements ISaltPower
     
     @Override
     public boolean hasSymmetryPenalty(Level world, BlockPos pos, BlockPos otherPos) {
-        // If one pedestal is full and the other is empty, invoke a symmetry penalty
         BlockEntity tile = world.getBlockEntity(pos);
         BlockEntity otherTile = world.getBlockEntity(otherPos);
+        
+        // If there's a pedestal in one spot but not the other, invoke a symmetry penalty
+        if ( ((tile instanceof OfferingPedestalTileEntity) && !(otherTile instanceof OfferingPedestalTileEntity)) ||
+                (!(tile instanceof OfferingPedestalTileEntity) && (otherTile instanceof OfferingPedestalTileEntity)) ) {
+            return true;
+        }
+
+        // If one pedestal is full and the other is empty, invoke a symmetry penalty
         if (world.isClientSide) {
-            return ( (tile instanceof OfferingPedestalTileEntity) &&
-                     (otherTile instanceof OfferingPedestalTileEntity) &&
-                     ((OfferingPedestalTileEntity)tile).getSyncedStackInSlot(0).isEmpty() != ((OfferingPedestalTileEntity)otherTile).getSyncedStackInSlot(0).isEmpty() );
+            return ( (tile instanceof OfferingPedestalTileEntity pedestal) &&
+                     (otherTile instanceof OfferingPedestalTileEntity otherPedestal) &&
+                     pedestal.getSyncedStack().isEmpty() != otherPedestal.getSyncedStack().isEmpty() );
         } else {
-            return ( (tile instanceof OfferingPedestalTileEntity) &&
-                     (otherTile instanceof OfferingPedestalTileEntity) &&
-                     ((OfferingPedestalTileEntity)tile).getItem(0).isEmpty() != ((OfferingPedestalTileEntity)otherTile).getItem(0).isEmpty() );
+            return ( (tile instanceof OfferingPedestalTileEntity pedestal) &&
+                     (otherTile instanceof OfferingPedestalTileEntity otherPedestal) &&
+                     pedestal.getItem().isEmpty() != otherPedestal.getItem().isEmpty() );
         }
     }
     
@@ -134,8 +138,8 @@ public class OfferingPedestalBlock extends BaseEntityBlock implements ISaltPower
         // Drop the tile entity's inventory into the world when the block is replaced
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof OfferingPedestalTileEntity) {
-                Containers.dropContents(worldIn, pos, (OfferingPedestalTileEntity)tile);
+            if (tile instanceof OfferingPedestalTileEntity pedestalTile) {
+                pedestalTile.dropContents(worldIn, pos);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);

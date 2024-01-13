@@ -3,18 +3,17 @@ package com.verdantartifice.primalmagick.client.gui;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.gui.recipe_book.ArcaneRecipeBookComponent;
 import com.verdantartifice.primalmagick.client.gui.recipe_book.ArcaneRecipeUpdateListener;
 import com.verdantartifice.primalmagick.client.gui.widgets.ManaGaugeWidget;
-import com.verdantartifice.primalmagick.common.containers.DissolutionChamberContainer;
+import com.verdantartifice.primalmagick.common.menus.DissolutionChamberMenu;
 import com.verdantartifice.primalmagick.common.sources.Source;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -26,36 +25,34 @@ import net.minecraft.world.inventory.Slot;
  * 
  * @author Daedalus4096
  */
-public class DissolutionChamberScreen extends AbstractContainerScreen<DissolutionChamberContainer> implements ArcaneRecipeUpdateListener {
+public class DissolutionChamberScreen extends AbstractContainerScreen<DissolutionChamberMenu> implements ArcaneRecipeUpdateListener {
     protected static final Logger LOGGER = LogManager.getLogger();
-    protected static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/dissolution_chamber.png");
-    protected static final ResourceLocation RECIPE_BUTTON_LOCATION = new ResourceLocation("textures/gui/recipe_button.png");
+    protected static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/dissolution_chamber.png");
     
     protected final ArcaneRecipeBookComponent recipeBookComponent = new ArcaneRecipeBookComponent();
     protected boolean widthTooNarrow;
     protected ManaGaugeWidget manaGauge;
 
-    public DissolutionChamberScreen(DissolutionChamberContainer screenContainer, Inventory inv, Component titleIn) {
-        super(screenContainer, inv, titleIn);
-        this.titleLabelX = 44;
+    public DissolutionChamberScreen(DissolutionChamberMenu screenMenu, Inventory inv, Component titleIn) {
+        super(screenMenu, inv, titleIn);
+        this.titleLabelX = 27;
         this.inventoryLabelX = 27;
     }
 
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         this.manaGauge.setCurrentMana(this.menu.getCurrentMana());
         this.manaGauge.setMaxMana(this.menu.getMaxMana());
-        this.renderBackground(matrixStack);
         if (this.recipeBookComponent.isVisible() && this.widthTooNarrow) {
-            this.renderBg(matrixStack, partialTicks, mouseX, mouseY);
-            this.recipeBookComponent.render(matrixStack, mouseX, mouseY, partialTicks);
+            this.renderBg(guiGraphics, partialTicks, mouseX, mouseY);
+            this.recipeBookComponent.render(guiGraphics, mouseX, mouseY, partialTicks);
         } else {
-            this.recipeBookComponent.render(matrixStack, mouseX, mouseY, partialTicks);
-            super.render(matrixStack, mouseX, mouseY, partialTicks);
-            this.recipeBookComponent.renderGhostRecipe(matrixStack, this.leftPos, this.topPos, true, partialTicks);
+            super.render(guiGraphics, mouseX, mouseY, partialTicks);
+            this.recipeBookComponent.render(guiGraphics, mouseX, mouseY, partialTicks);
+            this.recipeBookComponent.renderGhostRecipe(guiGraphics, this.leftPos, this.topPos, true, partialTicks);
         }
-        this.renderTooltip(matrixStack, mouseX, mouseY);
-        this.recipeBookComponent.renderTooltip(matrixStack, this.leftPos, this.topPos, mouseX, mouseY);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
+        this.recipeBookComponent.renderTooltip(guiGraphics, this.leftPos, this.topPos, mouseX, mouseY);
     }
     
     @Override
@@ -67,7 +64,7 @@ public class DissolutionChamberScreen extends AbstractContainerScreen<Dissolutio
         
         this.manaGauge = this.addRenderableWidget(new ManaGaugeWidget(this.leftPos + 10, this.topPos + 6, Source.EARTH, this.menu.getCurrentMana(), this.menu.getMaxMana()));
         
-        this.addRenderableWidget(new ImageButton(this.leftPos + 80, this.topPos + 52, 20, 18, 0, 0, 19, RECIPE_BUTTON_LOCATION, (button) -> {
+        this.addRenderableWidget(new ImageButton(this.leftPos + 80, this.topPos + 52, 20, 18, RecipeBookComponent.RECIPE_BUTTON_SPRITES, (button) -> {
             this.recipeBookComponent.toggleVisibility();
             this.leftPos = this.recipeBookComponent.updateScreenPosition(this.width, this.imageWidth);
             ((ImageButton)button).setPosition(this.leftPos + 80, this.topPos + 52);
@@ -75,7 +72,6 @@ public class DissolutionChamberScreen extends AbstractContainerScreen<Dissolutio
         }));
         this.addWidget(this.recipeBookComponent);
         this.setInitialFocus(this.recipeBookComponent);
-        this.titleLabelX = 29;
     }
 
     @Override
@@ -85,16 +81,14 @@ public class DissolutionChamberScreen extends AbstractContainerScreen<Dissolutio
     }
 
     @Override
-    protected void renderBg(PoseStack matrixStack, float partialTicks, int x, int y) {
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int x, int y) {
         // Render background texture
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
+        guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        guiGraphics.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
         
         // Animate progress indicator
         int cook = this.menu.getDissolutionProgressionScaled();
-        this.blit(matrixStack, this.leftPos + 78, this.topPos + 34, 176, 0, cook + 1, 16);
+        guiGraphics.blit(TEXTURE, this.leftPos + 78, this.topPos + 34, 176, 0, cook + 1, 16);
     }
 
     @Override
@@ -122,12 +116,6 @@ public class DissolutionChamberScreen extends AbstractContainerScreen<Dissolutio
     protected void slotClicked(Slot p_97778_, int p_97779_, int p_97780_, ClickType p_97781_) {
         super.slotClicked(p_97778_, p_97779_, p_97780_, p_97781_);
         this.recipeBookComponent.slotClicked(p_97778_);
-    }
-
-    @Override
-    public void removed() {
-        super.removed();
-        this.recipeBookComponent.removed();
     }
 
     @Override

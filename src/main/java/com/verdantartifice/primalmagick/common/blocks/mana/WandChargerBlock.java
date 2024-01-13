@@ -5,7 +5,6 @@ import com.verdantartifice.primalmagick.common.tiles.mana.WandChargerTileEntity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -18,10 +17,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.Material;
-import net.minecraft.world.level.material.MaterialColor;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Block definition for the wand charger.  A wand charger allows a player to charge a wand with mana by
@@ -32,7 +30,7 @@ import net.minecraftforge.network.NetworkHooks;
  */
 public class WandChargerBlock extends BaseEntityBlock {
     public WandChargerBlock() {
-        super(Block.Properties.of(Material.STONE, MaterialColor.QUARTZ).strength(1.5F, 6.0F).sound(SoundType.STONE).noOcclusion());
+        super(Block.Properties.of().mapColor(MapColor.QUARTZ).instrument(NoteBlockInstrument.BASEDRUM).strength(1.5F, 6.0F).sound(SoundType.STONE).noOcclusion());
     }
     
     @Override
@@ -52,11 +50,11 @@ public class WandChargerBlock extends BaseEntityBlock {
 
     @Override
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        if (!worldIn.isClientSide && player instanceof ServerPlayer) {
+        if (!worldIn.isClientSide && player instanceof ServerPlayer serverPlayer) {
             // Open the GUI for the wand charger
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof WandChargerTileEntity) {
-                NetworkHooks.openGui((ServerPlayer)player, (WandChargerTileEntity)tile);
+            if (tile instanceof WandChargerTileEntity chargerTile) {
+                serverPlayer.openMenu(chargerTile, tile.getBlockPos());
             }
         }
         return InteractionResult.SUCCESS;
@@ -68,8 +66,8 @@ public class WandChargerBlock extends BaseEntityBlock {
         // Drop the tile entity's inventory into the world when the block is replaced
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof WandChargerTileEntity) {
-                Containers.dropContents(worldIn, pos, (WandChargerTileEntity)tile);
+            if (tile instanceof WandChargerTileEntity chargerTile) {
+                chargerTile.dropContents(worldIn, pos);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);

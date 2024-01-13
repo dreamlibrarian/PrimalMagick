@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:bone_meal",
-  "set": {
-    "moon": 1,
-    "blood": 2
-  }
-}

@@ -1,0 +1,29 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "I": {
+      "tag": "primalmagick:ingots/hallowsteel"
+    },
+    "P": {
+      "item": "primalmagick:magitech_parts_heavenly"
+    },
+    "R": {
+      "tag": "forge:storage_blocks/redstone"
+    }
+  },
+  "mana": {
+    "sources": {
+      "hallowed": 100
+    }
+  },
+  "pattern": [
+    "PIP",
+    "IRI",
+    "PIP"
+  ],
+  "research": "HALLOWSTEEL_GOLEM",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:hallowsteel_golem_controller"
+  }
+}

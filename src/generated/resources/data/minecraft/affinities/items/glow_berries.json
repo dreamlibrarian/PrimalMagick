@@ -1,0 +1,8 @@
+{
+  "type": "item",
+  "set": {
+    "earth": 5,
+    "sun": 10
+  },
+  "target": "minecraft:glow_berries"
+}

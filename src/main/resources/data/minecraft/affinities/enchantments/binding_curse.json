@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:binding_curse",
-  "multiplier": {
-    "void": 1
-  }
-}

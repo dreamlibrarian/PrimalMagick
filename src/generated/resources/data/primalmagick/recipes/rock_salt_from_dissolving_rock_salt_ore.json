@@ -1,0 +1,15 @@
+{
+  "type": "primalmagick:dissolution",
+  "ingredient": {
+    "item": "primalmagick:rock_salt_ore"
+  },
+  "mana": {
+    "sources": {
+      "earth": 1
+    }
+  },
+  "result": {
+    "Count": 12,
+    "id": "primalmagick:rock_salt"
+  }
+}

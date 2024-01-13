@@ -50,8 +50,8 @@ public class CompanionManager {
             IPlayerCompanions companions = PrimalMagickCapabilities.getCompanions(player);
             if (companions != null) {
                 UUID oldCompanion = companions.add(companion.getCompanionType(), companion.getUUID());
-                if (oldCompanion != null && player.level instanceof ServerLevel) {
-                    for (ServerLevel serverWorld : ((ServerLevel)player.level).getServer().getAllLevels()) {
+                if (oldCompanion != null && player.level() instanceof ServerLevel serverLevel) {
+                    for (ServerLevel serverWorld : serverLevel.getServer().getAllLevels()) {
                         Entity entity = serverWorld.getEntity(oldCompanion);
                         if (entity != null) {
                             entity.kill();
@@ -77,6 +77,15 @@ public class CompanionManager {
             if (companions != null && companions.remove(companion.getCompanionType(), companion.getUUID())) {
                 CompanionManager.scheduleSync(player);
             }
+        }
+    }
+    
+    public static boolean isCurrentCompanion(@Nullable Player player, @Nullable AbstractCompanionEntity companion) {
+        if (player == null || companion == null) {
+            return false;
+        } else {
+            IPlayerCompanions companions = PrimalMagickCapabilities.getCompanions(player);
+            return companions != null && companions.contains(companion.getCompanionType(), companion.getUUID());
         }
     }
 }

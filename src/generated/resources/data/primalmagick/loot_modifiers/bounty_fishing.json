@@ -1,0 +1,29 @@
+{
+  "type": "primalmagick:bounty_fishing",
+  "chance": 0.25,
+  "conditions": [
+    {
+      "condition": "minecraft:entity_properties",
+      "entity": "this",
+      "predicate": {
+        "type_specific": {
+          "type": "fishing_hook",
+          "in_open_water": true
+        }
+      }
+    },
+    {
+      "condition": "minecraft:match_tool",
+      "predicate": {
+        "enchantments": [
+          {
+            "enchantment": "primalmagick:bounty",
+            "levels": {
+              "min": 1
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

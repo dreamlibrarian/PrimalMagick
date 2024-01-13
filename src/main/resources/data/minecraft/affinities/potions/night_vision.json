@@ -1,7 +1,0 @@
-{
-  "type": "potion_bonus",
-  "target": "minecraft:night_vision",
-  "bonus": {
-    "moon": 2
-  }
-}

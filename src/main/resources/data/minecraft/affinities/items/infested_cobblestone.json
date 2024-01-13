@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:infested_cobblestone",
-  "base": "minecraft:cobblestone",
-  "add": {
-    "blood": 2
-  }
-}

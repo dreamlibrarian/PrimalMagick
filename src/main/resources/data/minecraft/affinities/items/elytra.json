@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:elytra",
-  "set": {
-    "sky": 25,
-    "void": 10
-  }
-}

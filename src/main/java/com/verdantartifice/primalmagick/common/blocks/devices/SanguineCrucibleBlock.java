@@ -1,7 +1,5 @@
 package com.verdantartifice.primalmagick.common.blocks.devices;
 
-import java.util.Random;
-
 import com.verdantartifice.primalmagick.common.items.ItemsPM;
 import com.verdantartifice.primalmagick.common.items.misc.SanguineCoreItem;
 import com.verdantartifice.primalmagick.common.tiles.TileEntityTypesPM;
@@ -11,7 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Containers;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -35,7 +33,7 @@ import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -54,7 +52,7 @@ public class SanguineCrucibleBlock extends BaseEntityBlock {
     protected static final VoxelShape SHAPE = Shapes.join(Shapes.block(), Shapes.or(box(0.0D, 0.0D, 4.0D, 16.0D, 3.0D, 12.0D), box(4.0D, 0.0D, 0.0D, 12.0D, 3.0D, 16.0D), box(2.0D, 0.0D, 2.0D, 14.0D, 3.0D, 14.0D), INSIDE), BooleanOp.ONLY_FIRST);
 
     public SanguineCrucibleBlock() {
-        super(Block.Properties.of(Material.METAL).strength(7.0F, 6.0F).lightLevel((state) -> { 
+        super(Block.Properties.of().mapColor(MapColor.METAL).strength(7.0F, 6.0F).lightLevel((state) -> { 
             return state.getValue(BlockStateProperties.LIT) ? 13 : 0; 
         }).sound(SoundType.METAL));
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH).setValue(LIT, Boolean.valueOf(false)));
@@ -132,16 +130,15 @@ public class SanguineCrucibleBlock extends BaseEntityBlock {
     public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
         ItemStack stack = player.getItemInHand(handIn);
         BlockEntity tile = worldIn.getBlockEntity(pos);
-        if (!worldIn.isClientSide && tile instanceof SanguineCrucibleTileEntity) {
-            SanguineCrucibleTileEntity crucibleTile = (SanguineCrucibleTileEntity)tile;
+        if (!worldIn.isClientSide && tile instanceof SanguineCrucibleTileEntity crucibleTile) {
             if (stack.getItem() instanceof SanguineCoreItem && !crucibleTile.hasCore()) {
-                crucibleTile.setItem(0, stack.copy());
+                crucibleTile.setItem(stack.copy());
                 stack.shrink(1);
                 worldIn.playSound(null, pos, SoundEvents.STONE_PRESSURE_PLATE_CLICK_ON, SoundSource.BLOCKS, 0.3F, 0.6F);
                 worldIn.setBlock(pos, state.setValue(LIT, true), Block.UPDATE_ALL_IMMEDIATE);
                 return InteractionResult.SUCCESS;
             } else if (player.isSecondaryUseActive() && stack.isEmpty() && crucibleTile.hasCore()) {
-                popResource(worldIn, pos.relative(hit.getDirection()), crucibleTile.removeItemNoUpdate(0));
+                popResource(worldIn, pos.relative(hit.getDirection()), crucibleTile.removeItem(1));
                 worldIn.playSound(null, pos, SoundEvents.STONE_PRESSURE_PLATE_CLICK_OFF, SoundSource.BLOCKS, 0.3F, 0.5F);
                 worldIn.setBlock(pos, state.setValue(LIT, false), Block.UPDATE_ALL_IMMEDIATE);
                 return InteractionResult.SUCCESS;
@@ -157,8 +154,8 @@ public class SanguineCrucibleBlock extends BaseEntityBlock {
         // Drop the tile entity's inventory into the world when the block is replaced
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity tile = worldIn.getBlockEntity(pos);
-            if (tile instanceof SanguineCrucibleTileEntity) {
-                Containers.dropContents(worldIn, pos, (SanguineCrucibleTileEntity)tile);
+            if (tile instanceof SanguineCrucibleTileEntity crucibleTile) {
+                crucibleTile.dropContents(worldIn, pos);
                 worldIn.updateNeighbourForOutputSignal(pos, this);
             }
             super.onRemove(state, worldIn, pos, newState, isMoving);
@@ -166,7 +163,7 @@ public class SanguineCrucibleBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         if (rand.nextDouble() < 0.1D) {
             worldIn.playSound(null, pos, SoundEvents.LAVA_POP, SoundSource.BLOCKS, 0.1F + (rand.nextFloat() * 0.1F), 0.8F + (rand.nextFloat() * 0.4F));
         }

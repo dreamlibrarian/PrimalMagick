@@ -5,13 +5,13 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
 
+import org.joml.Vector3f;
+
 import com.google.common.collect.ImmutableMap;
-import com.mojang.math.Vector3f;
 import com.verdantartifice.primalmagick.common.blockstates.properties.SaltSide;
 import com.verdantartifice.primalmagick.common.rituals.ISaltPowered;
 
@@ -19,6 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -31,7 +32,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -56,7 +57,7 @@ public class SaltTrailBlock extends Block implements ISaltPowered {
     protected final Set<BlockPos> blocksNeedingUpdate = new HashSet<>();
 
     public SaltTrailBlock() {
-        super(Block.Properties.of(Material.DECORATION).noCollission().strength(0.0F));
+        super(Block.Properties.of().pushReaction(PushReaction.DESTROY).noCollission().strength(0.0F));
         this.registerDefaultState(this.stateDefinition.any().setValue(NORTH, SaltSide.NONE).setValue(EAST, SaltSide.NONE).setValue(SOUTH, SaltSide.NONE).setValue(WEST, SaltSide.NONE).setValue(POWER, Integer.valueOf(0)));
     }
     
@@ -343,7 +344,7 @@ public class SaltTrailBlock extends Block implements ISaltPowered {
     }
     
     @Override
-    public void animateTick(BlockState state, Level world, BlockPos pos, Random rand) {
+    public void animateTick(BlockState state, Level world, BlockPos pos, RandomSource rand) {
         int power = state.getValue(POWER);
         if (power > 0) {
             double x = (double)pos.getX() + 0.5D + ((double)rand.nextFloat() - 0.5D) * 0.2D;

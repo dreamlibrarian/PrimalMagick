@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:cocoa_beans",
-  "set": {
-    "earth": 2,
-    "sun": 2
-  }
-}

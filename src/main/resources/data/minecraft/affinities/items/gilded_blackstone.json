@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:gilded_blackstone",
-  "base": "minecraft:blackstone",
-  "add": {
-    "earth": 10
-  }
-}

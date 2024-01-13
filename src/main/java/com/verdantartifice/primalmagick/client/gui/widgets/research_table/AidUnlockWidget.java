@@ -1,19 +1,14 @@
 package com.verdantartifice.primalmagick.client.gui.widgets.research_table;
 
-import java.util.Collections;
-
 import javax.annotation.Nonnull;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
-import com.verdantartifice.primalmagick.client.util.GuiUtils;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 
@@ -23,23 +18,23 @@ import net.minecraft.world.level.block.Block;
  * @author Daedalus4096
  */
 public class AidUnlockWidget extends AbstractWidget {
-    protected static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/research_table_overlay.png");
+    protected static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/research_table_overlay.png");
     
     protected Block aidBlock;
 
     public AidUnlockWidget(int x, int y, @Nonnull Block aidBlock) {
-        super(x, y, 8, 8, TextComponent.EMPTY);
+        super(x, y, 8, 8, Component.empty());
         this.aidBlock = aidBlock;
+        this.setTooltip(Tooltip.create(Component.translatable("label.primalmagick.research_table.unlock", this.aidBlock.getName())));
     }
     
     @Override
-    public void renderButton(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         // Draw padlock icon
-        matrixStack.pushPose();
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        matrixStack.translate(this.x, this.y, 0.0F);
-        this.blit(matrixStack, 0, 0, 198, 0, 8, 8);
-        matrixStack.popPose();
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(this.getX(), this.getY(), 0.0F);
+        guiGraphics.blit(TEXTURE, 0, 0, 198, 0, 8, 8);
+        guiGraphics.pose().popPose();
     }
     
     @Override
@@ -49,15 +44,6 @@ public class AidUnlockWidget extends AbstractWidget {
     }
 
     @Override
-    public void updateNarration(NarrationElementOutput output) {
-    }
-
-    @Override
-    public void renderToolTip(PoseStack matrixStack, int mouseX, int mouseY) {
-        if (this.aidBlock != null) {
-            // Render tooltip
-            Component unlockText = new TranslatableComponent("primalmagick.research_table.unlock", this.aidBlock.getName());
-            GuiUtils.renderCustomTooltip(matrixStack, Collections.singletonList(unlockText), mouseX, mouseY);
-        }
+    public void updateWidgetNarration(NarrationElementOutput output) {
     }
 }

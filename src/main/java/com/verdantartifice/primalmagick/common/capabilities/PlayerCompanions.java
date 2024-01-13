@@ -27,7 +27,8 @@ import net.minecraftforge.common.util.LazyOptional;
  * @author Daedalus4096
  */
 public class PlayerCompanions implements IPlayerCompanions {
-    private Map<CompanionType, LinkedList<UUID>> companions = new ConcurrentHashMap<>();
+    private final Map<CompanionType, LinkedList<UUID>> companions = new ConcurrentHashMap<>();
+    private long syncTimestamp = 0L;    // Last timestamp at which this capability received a sync from the server
 
     @Override
     public CompoundTag serializeNBT() {
@@ -42,11 +43,15 @@ public class PlayerCompanions implements IPlayerCompanions {
             }
             rootTag.put(type.getSerializedName(), list);
         }
+        rootTag.putLong("SyncTimestamp", System.currentTimeMillis());
         return rootTag;
     }
 
     @Override
     public void deserializeNBT(CompoundTag nbt) {
+        if (nbt == null || nbt.getLong("SyncTimestamp") <= this.syncTimestamp) {
+            return;
+        }
         this.clear();
         for (CompanionType type : CompanionType.values()) {
             if (nbt.contains(type.getSerializedName(), Tag.TAG_LIST)) {
@@ -110,7 +115,7 @@ public class PlayerCompanions implements IPlayerCompanions {
      * @see {@link com.verdantartifice.primalmagick.common.events.CapabilityEvents}
      */
     public static class Provider implements ICapabilitySerializable<CompoundTag> {
-        public static final ResourceLocation NAME = new ResourceLocation(PrimalMagick.MODID, "capability_companions");
+        public static final ResourceLocation NAME = PrimalMagick.resource("capability_companions");
         
         private final IPlayerCompanions instance = new PlayerCompanions();
         private final LazyOptional<IPlayerCompanions> holder = LazyOptional.of(() -> instance);  // Cache a lazy optional of the capability instance

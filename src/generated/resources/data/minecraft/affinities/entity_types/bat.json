@@ -1,0 +1,9 @@
+{
+  "type": "entity_type",
+  "target": "minecraft:bat",
+  "values": {
+    "blood": 5,
+    "moon": 10,
+    "sky": 10
+  }
+}

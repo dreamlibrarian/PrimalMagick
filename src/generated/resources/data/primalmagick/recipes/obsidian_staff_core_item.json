@@ -1,0 +1,30 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "#": {
+      "tag": "forge:obsidian"
+    },
+    "D": {
+      "item": "primalmagick:essence_shard_earth"
+    }
+  },
+  "mana": {
+    "sources": {
+      "earth": 15,
+      "moon": 5,
+      "sea": 5,
+      "sky": 5,
+      "sun": 5
+    }
+  },
+  "pattern": [
+    " D#",
+    "D#D",
+    "#D "
+  ],
+  "research": "STAVES&&WAND_CORE_OBSIDIAN",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:obsidian_staff_core_item"
+  }
+}

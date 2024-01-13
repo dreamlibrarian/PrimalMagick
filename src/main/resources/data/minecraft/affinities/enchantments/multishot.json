@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "minecraft:multishot",
-  "multiplier": {
-    "sky": 1
-  }
-}

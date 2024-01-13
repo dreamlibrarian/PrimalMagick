@@ -3,38 +3,37 @@ package com.verdantartifice.primalmagick.client.gui;
 import java.awt.Color;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.verdantartifice.primalmagick.PrimalMagick;
+import com.verdantartifice.primalmagick.client.gui.widgets.InactiveWidget;
 import com.verdantartifice.primalmagick.client.gui.widgets.research_table.AidListWidget;
 import com.verdantartifice.primalmagick.client.gui.widgets.research_table.AidUnlockWidget;
 import com.verdantartifice.primalmagick.client.gui.widgets.research_table.KnowledgeTotalWidget;
+import com.verdantartifice.primalmagick.client.gui.widgets.research_table.OtherRewardWidget;
 import com.verdantartifice.primalmagick.client.gui.widgets.research_table.ProjectMaterialSelectionCheckbox;
 import com.verdantartifice.primalmagick.client.gui.widgets.research_table.ProjectMaterialWidgetFactory;
 import com.verdantartifice.primalmagick.common.capabilities.IPlayerKnowledge;
 import com.verdantartifice.primalmagick.common.capabilities.PrimalMagickCapabilities;
-import com.verdantartifice.primalmagick.common.containers.ResearchTableContainer;
+import com.verdantartifice.primalmagick.common.menus.ResearchTableMenu;
 import com.verdantartifice.primalmagick.common.network.PacketHandler;
 import com.verdantartifice.primalmagick.common.network.packets.theorycrafting.CompleteProjectPacket;
 import com.verdantartifice.primalmagick.common.network.packets.theorycrafting.SetProjectMaterialSelectionPacket;
 import com.verdantartifice.primalmagick.common.network.packets.theorycrafting.StartProjectPacket;
+import com.verdantartifice.primalmagick.common.research.KnowledgeType;
 import com.verdantartifice.primalmagick.common.theorycrafting.AbstractProjectMaterial;
 import com.verdantartifice.primalmagick.common.theorycrafting.Project;
 import com.verdantartifice.primalmagick.common.theorycrafting.TheorycraftManager;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Widget;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -45,9 +44,9 @@ import net.minecraft.world.level.block.Block;
  * 
  * @author Daedalus4096
  */
-public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableContainer> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PrimalMagick.MODID, "textures/gui/research_table.png");
-    private static final ResourceLocation OVERLAY = new ResourceLocation(PrimalMagick.MODID, "textures/gui/research_table_overlay.png");
+public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableMenu> {
+    private static final ResourceLocation TEXTURE = PrimalMagick.resource("textures/gui/research_table.png");
+    private static final ResourceLocation OVERLAY = PrimalMagick.resource("textures/gui/research_table_overlay.png");
     private static final DecimalFormat FORMATTER = new DecimalFormat("###.#");
     
     protected long lastCheck = 0L;
@@ -59,8 +58,8 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableCo
     protected Project lastProject = null;
     protected Button completeProjectButton = null;
 
-    public ResearchTableScreen(ResearchTableContainer screenContainer, Inventory inv, Component titleIn) {
-        super(screenContainer, inv, titleIn);
+    public ResearchTableScreen(ResearchTableMenu screenMenu, Inventory inv, Component titleIn) {
+        super(screenMenu, inv, titleIn);
         this.imageWidth = 230;
         this.imageHeight = 222;
     }
@@ -76,7 +75,7 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableCo
     }
     
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         // Determine if we need to update the GUI based on how long it's been since the last refresh, or writing tool availability
         long millis = System.currentTimeMillis();
         this.lastWritingReady = this.writingReady;
@@ -92,60 +91,51 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableCo
             this.initButtons();
         }
 
-        this.renderBackground(matrixStack);
-        super.render(matrixStack, mouseX, mouseY, partialTicks);
-        this.renderTooltip(matrixStack, mouseX, mouseY);
-        
-        for (Widget w : this.renderables) {
-            if (w instanceof AbstractWidget widget && widget.isHoveredOrFocused()) {
-                widget.renderToolTip(matrixStack, mouseX, mouseY);
-            }
-        }
+        super.render(guiGraphics, mouseX, mouseY, partialTicks);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
     
     @Override
-    protected void renderLabels(PoseStack matrixStack, int mouseX, int mouseY) {
+    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         Minecraft mc = Minecraft.getInstance();
         
         if (this.isProjectReady()) {
             int y = 11;
             
             // Render title text
-            Component titleText = new TranslatableComponent(this.project.getNameTranslationKey()).withStyle(ChatFormatting.BOLD);
+            Component titleText = Component.translatable(this.project.getNameTranslationKey()).withStyle(ChatFormatting.BOLD);
             int titleWidth = mc.font.width(titleText);
-            mc.font.draw(matrixStack, titleText, 34 + ((162 - titleWidth) / 2), y, Color.BLACK.getRGB());
+            guiGraphics.drawString(mc.font, titleText, 34 + ((162 - titleWidth) / 2), y, Color.BLACK.getRGB(), false);
             y += (int)(mc.font.lineHeight * 1.66D);
             
             // Render description text
-            Component descText = new TranslatableComponent(this.project.getTextTranslationKey());
+            Component descText = Component.translatable(this.project.getTextTranslationKey());
             List<FormattedText> descLines = mc.font.getSplitter().splitLines(descText, 154, Style.EMPTY); // list formatted string to width
             for (FormattedText line : descLines) {
-                mc.font.draw(matrixStack, line.getString(), 38, y, Color.BLACK.getRGB());
+                guiGraphics.drawString(mc.font, line.getString(), 38, y, Color.BLACK.getRGB(), false);
                 y += mc.font.lineHeight;
             }
         } else if (!this.menu.isWritingReady()) {
             // Render missing writing materials text
-            Component text = new TranslatableComponent("primalmagick.research_table.missing_writing_supplies");
+            Component text = Component.translatable("label.primalmagick.research_table.missing_writing_supplies");
             int width = mc.font.width(text.getString());
-            mc.font.draw(matrixStack, text, 34 + ((162 - width) / 2), 7 + ((128 - mc.font.lineHeight) / 2), Color.BLACK.getRGB());
+            guiGraphics.drawString(mc.font, text, 34 + ((162 - width) / 2), 7 + ((128 - mc.font.lineHeight) / 2), Color.BLACK.getRGB(), false);
         } else {
             // Render ready to start text
-            Component text = new TranslatableComponent("primalmagick.research_table.ready");
+            Component text = Component.translatable("label.primalmagick.research_table.ready");
             int width = mc.font.width(text.getString());
-            mc.font.draw(matrixStack, text, 34 + ((162 - width) / 2), 7 + ((128 - mc.font.lineHeight) / 2), Color.BLACK.getRGB());
+            guiGraphics.drawString(mc.font, text, 34 + ((162 - width) / 2), 7 + ((128 - mc.font.lineHeight) / 2), Color.BLACK.getRGB(), false);
         }
     }
 
     @Override
-    protected void renderBg(PoseStack matrixStack, float partialTicks, int mouseX, int mouseY) {
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
         // Render the GUI background
-        RenderSystem.setShaderTexture(0, TEXTURE);
-        this.blit(matrixStack, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
+        guiGraphics.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
         
         // If a research project is ready to go, render the page overlay
         if (this.isProjectReady()) {
-            RenderSystem.setShaderTexture(0, OVERLAY);
-            this.blit(matrixStack, this.leftPos + 34, this.topPos + 7, 0, 0, 162, 128);
+            guiGraphics.blit(OVERLAY, this.leftPos + 34, this.topPos + 7, 0, 0, 162, 128);
         }
     }
     
@@ -173,31 +163,39 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableCo
         this.clearWidgets();
         this.completeProjectButton = null;
         
-        // Render theory progress widget
-        this.addRenderableWidget(new KnowledgeTotalWidget(this.leftPos + 203, this.topPos + 116, IPlayerKnowledge.KnowledgeType.THEORY));
-        
         if (this.project == null && this.menu.isWritingReady()) {
+            // Render theory progress widget
+            this.addRenderableWidget(new KnowledgeTotalWidget(this.leftPos + 203, this.topPos + 116, KnowledgeType.THEORY));
+            
             if (this.progressing) {
                 // Render starting widget
-                Component text = new TranslatableComponent("primalmagick.research_table.starting");
-                this.addRenderableWidget(new WaitingWidget(this.leftPos + 38, this.topPos + 111, text));
+                Component text = Component.translatable("label.primalmagick.research_table.starting");
+                this.addRenderableWidget(new InactiveWidget(this.leftPos + 38, this.topPos + 111, 154, 20, text));
             } else {
                 // Render start project button
-                Component text = new TranslatableComponent("primalmagick.research_table.start");
+                Component text = Component.translatable("label.primalmagick.research_table.start");
                 this.addRenderableWidget(new StartProjectButton(this.leftPos + 38, this.topPos + 111, text, this));
             }
         } else if (this.isProjectReady()) {
+            // Render theory progress widget with gain preview
+            this.addRenderableWidget(new KnowledgeTotalWidget(this.leftPos + 203, this.topPos + 116, KnowledgeType.THEORY, OptionalInt.of(this.project.getTheoryPointReward())));
+            
+            // Render reward widget if non-theory rewards are present for this project
+            if (!this.project.getOtherRewards().isEmpty()) {
+                this.addRenderableWidget(new OtherRewardWidget(this.project.getOtherRewards(), this.leftPos + 203, this.topPos + 97));
+            }
+            
             if (this.progressing) {
                 // Render completing widget
-                Component text = new TranslatableComponent("primalmagick.research_table.completing");
-                this.addRenderableWidget(new WaitingWidget(this.leftPos + 38, this.topPos + 111, text));
+                Component text = Component.translatable("label.primalmagick.research_table.completing");
+                this.addRenderableWidget(new InactiveWidget(this.leftPos + 38, this.topPos + 111, 154, 20, text));
             } else {
-                this.menu.getWorldPosCallable().execute((level, tablePos) -> {
+                this.menu.getContainerLevelAccess().execute((level, tablePos) -> {
                     // Render complete project button
                     Player player = this.minecraft.player;
                     double chance = 100.0D * this.project.getSuccessChance();
                     Set<Block> surroundings = TheorycraftManager.getSurroundings(level, tablePos);
-                    Component text = new TranslatableComponent("primalmagick.research_table.complete", FORMATTER.format(chance));
+                    Component text = Component.translatable("label.primalmagick.research_table.complete", FORMATTER.format(chance));
                     
                     this.completeProjectButton = this.addRenderableWidget(new CompleteProjectButton(this.leftPos + 38, this.topPos + 111, text, this));
                     this.completeProjectButton.active = this.project.isSatisfied(player, surroundings);
@@ -231,23 +229,7 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableCo
         }
         
         // Render observation progress widget
-        this.addRenderableWidget(new KnowledgeTotalWidget(this.leftPos + 11, this.topPos + 116, IPlayerKnowledge.KnowledgeType.OBSERVATION));
-    }
-    
-    /**
-     * GUI widget for a disabled text button to use while waiting for the server to update.
-     * 
-     * @author Daedalus4096
-     */
-    protected static class WaitingWidget extends AbstractWidget {
-        public WaitingWidget(int xIn, int yIn, Component msg) {
-            super(xIn, yIn, 154, 20, msg);
-            this.active = false;
-        }
-
-        @Override
-        public void updateNarration(NarrationElementOutput output) {
-        }
+        this.addRenderableWidget(new KnowledgeTotalWidget(this.leftPos + 11, this.topPos + 116, KnowledgeType.OBSERVATION));
     }
     
     /**
@@ -259,7 +241,7 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableCo
         protected ResearchTableScreen screen;
         
         public StartProjectButton(int xIn, int yIn, Component text, ResearchTableScreen screen) {
-            super(xIn, yIn, 154, 20, text, new Handler());
+            super(Button.builder(text, new Handler()).bounds(xIn, yIn, 154, 20));
             this.screen = screen;
         }
         
@@ -289,7 +271,7 @@ public class ResearchTableScreen extends AbstractContainerScreen<ResearchTableCo
         protected ResearchTableScreen screen;
         
         public CompleteProjectButton(int xIn, int yIn, Component text, ResearchTableScreen screen) {
-            super(xIn, yIn, 154, 20, text, new Handler());
+            super(Button.builder(text, new Handler()).bounds(xIn, yIn, 154, 20));
             this.screen = screen;
         }
         

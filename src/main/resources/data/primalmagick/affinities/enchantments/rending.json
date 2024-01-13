@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "primalmagick:rending",
-  "multiplier": {
-    "blood": 1
-  }
-}

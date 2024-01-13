@@ -1,0 +1,48 @@
+{
+  "type": "primalmagick:ritual",
+  "ingredients": [
+    {
+      "item": "primalmagick:manafruit"
+    },
+    {
+      "item": "primalmagick:mana_prism"
+    },
+    {
+      "item": "primalmagick:essence_crystal_moon"
+    },
+    {
+      "item": "primalmagick:rune_absorb"
+    },
+    {
+      "item": "primalmagick:rune_self"
+    },
+    {
+      "item": "primalmagick:rune_insight"
+    }
+  ],
+  "instability": 6,
+  "mana": {
+    "sources": {
+      "moon": 100
+    }
+  },
+  "props": [
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "tag": "primalmagick:ritual_candles"
+    },
+    {
+      "block": "primalmagick:ritual_lectern"
+    },
+    {
+      "block": "primalmagick:bloodletter"
+    }
+  ],
+  "research": "GREATER_AMBROSIA",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:ambrosia_greater_moon"
+  }
+}

@@ -1,7 +1,0 @@
-{
-  "type": "enchantment_bonus",
-  "target": "primalmagick:soulpiercing",
-  "multiplier": {
-    "infernal": 1
-  }
-}

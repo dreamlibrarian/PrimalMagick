@@ -1,13 +1,16 @@
 package com.verdantartifice.primalmagick.common.blocks.misc;
 
-import java.util.Random;
+import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
+import com.verdantartifice.primalmagick.common.sources.Source;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
@@ -19,7 +22,6 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -34,18 +36,28 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class GlowFieldBlock extends Block implements SimpleWaterloggedBlock {
     public static final IntegerProperty LIGHT = IntegerProperty.create("light", 1, 15);
     public static final BooleanProperty FADING = BooleanProperty.create("fading");
+    public static final BooleanProperty SPARKLING = BooleanProperty.create("sparkling");
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
     
     public GlowFieldBlock() {
-        super(Block.Properties.of(Material.AIR).strength(-1, 3600000).lightLevel((state) -> { return state.getValue(LIGHT); }).noDrops().noOcclusion().randomTicks());
-        this.registerDefaultState(this.stateDefinition.any().setValue(LIGHT, Integer.valueOf(15)).setValue(FADING, Boolean.FALSE).setValue(WATERLOGGED, Boolean.FALSE));
+        super(Block.Properties.of().replaceable().strength(-1, 3600000).lightLevel((state) -> { return state.getValue(LIGHT); }).noLootTable().noOcclusion().randomTicks());
+        this.registerDefaultState(this.stateDefinition.any().setValue(LIGHT, Integer.valueOf(15)).setValue(FADING, Boolean.FALSE).setValue(SPARKLING, Boolean.FALSE).setValue(WATERLOGGED, Boolean.FALSE));
     }
     
     @Override
     protected void createBlockStateDefinition(Builder<Block, BlockState> builder) {
-        builder.add(LIGHT, FADING, WATERLOGGED);
+        builder.add(LIGHT, FADING, SPARKLING, WATERLOGGED);
     }
 
+    @Override
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
+        // Show glittering particles
+        super.animateTick(stateIn, worldIn, pos, rand);
+        if (stateIn.getValue(SPARKLING)) {
+            FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Source.SUN.getColor());
+        }
+    }
+    
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         // Don't show a selection highlight when mousing over the field
@@ -69,7 +81,7 @@ public class GlowFieldBlock extends Block implements SimpleWaterloggedBlock {
     }
 
     @Override
-    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, Random rng) {
+    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource rng) {
         if (state.getValue(FADING)) {
             if (state.getValue(LIGHT) <= 1) {
                 level.removeBlock(pos, false);

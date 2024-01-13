@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:sponge",
-  "set": {
-    "sea": 10,
-    "void": 10
-  }
-}

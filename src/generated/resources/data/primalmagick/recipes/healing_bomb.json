@@ -1,0 +1,40 @@
+{
+  "type": "primalmagick:concocting",
+  "ingredients": [
+    {
+      "type": "forge:partial_nbt",
+      "items": [
+        "primalmagick:alchemical_bomb"
+      ],
+      "nbt": "{ConcoctionType:\"bomb\",Potion:\"minecraft:water\"}"
+    },
+    {
+      "item": "primalmagick:essence_shard_sun"
+    },
+    {
+      "item": "primalmagick:essence_shard_blood"
+    },
+    {
+      "tag": "forge:crops/nether_wart"
+    },
+    {
+      "item": "minecraft:glistering_melon_slice"
+    }
+  ],
+  "mana": {
+    "sources": {
+      "infernal": 3
+    }
+  },
+  "research": "CONCOCTING_BOMBS&&t_discover_blood",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:alchemical_bomb",
+    "tag": {
+      "BombFuse": "medium",
+      "ConcoctionDoses": 6,
+      "ConcoctionType": "bomb",
+      "Potion": "minecraft:healing"
+    }
+  }
+}

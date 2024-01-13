@@ -1,0 +1,9 @@
+{
+  "type": "entity_type",
+  "target": "minecraft:cave_spider",
+  "values": {
+    "blood": 5,
+    "earth": 10,
+    "moon": 5
+  }
+}

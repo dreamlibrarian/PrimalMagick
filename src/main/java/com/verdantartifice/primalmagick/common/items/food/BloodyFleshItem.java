@@ -2,7 +2,6 @@ package com.verdantartifice.primalmagick.common.items.food;
 
 import java.util.List;
 
-import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.common.capabilities.PrimalMagickCapabilities;
 import com.verdantartifice.primalmagick.common.research.ResearchManager;
 import com.verdantartifice.primalmagick.common.research.SimpleResearchKey;
@@ -10,10 +9,8 @@ import com.verdantartifice.primalmagick.common.sources.Source;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -27,7 +24,7 @@ import net.minecraft.world.level.Level;
  */
 public class BloodyFleshItem extends Item {
     public BloodyFleshItem() {
-        super(new Item.Properties().tab(PrimalMagick.ITEM_GROUP).rarity(Rarity.UNCOMMON).food(new FoodProperties.Builder().nutrition(3).saturationMod(0.3F).meat().alwaysEat().build()));
+        super(new Item.Properties().rarity(Rarity.UNCOMMON).food(FoodsPM.BLOODY_FLESH));
     }
 
     @Override
@@ -38,8 +35,7 @@ public class BloodyFleshItem extends Item {
                 if (knowledge.isResearchKnown(SimpleResearchKey.FIRST_STEPS) && !knowledge.isResearchKnown(Source.BLOOD.getDiscoverKey())) {
                     // Only unlock the Blood source if the player has started mod progression and hasn't already unlocked it
                     ResearchManager.completeResearch(player, Source.BLOOD.getDiscoverKey());
-                    ResearchManager.completeResearch(player, SimpleResearchKey.parse("t_discover_forbidden"));
-                    player.displayClientMessage(new TranslatableComponent("event.primalmagick.discover_source.blood").withStyle(ChatFormatting.GREEN), false);
+                    player.displayClientMessage(Component.translatable("event.primalmagick.discover_source.blood").withStyle(ChatFormatting.GREEN), false);
                 }
             });
         }
@@ -48,7 +44,7 @@ public class BloodyFleshItem extends Item {
     
     @Override
     public void appendHoverText(ItemStack stack, Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
-        tooltip.add(new TranslatableComponent("tooltip.primalmagick.bloody_flesh.1").withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC));
-        tooltip.add(new TranslatableComponent("tooltip.primalmagick.bloody_flesh.2").withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC));
+        tooltip.add(Component.translatable("item.primalmagick.bloody_flesh.tooltip.1").withStyle(Source.BLOOD.getChatColor(), ChatFormatting.ITALIC));
+        tooltip.add(Component.translatable("item.primalmagick.bloody_flesh.tooltip.2").withStyle(Source.BLOOD.getChatColor(), ChatFormatting.ITALIC));
     }
 }

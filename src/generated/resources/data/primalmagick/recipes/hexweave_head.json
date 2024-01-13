@@ -1,0 +1,20 @@
+{
+  "type": "primalmagick:arcane_crafting_shaped",
+  "key": {
+    "#": {
+      "item": "primalmagick:hexweave"
+    }
+  },
+  "pattern": [
+    "###",
+    "# #"
+  ],
+  "research": "HEXWEAVE",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:hexweave_head",
+    "tag": {
+      "Damage": 0
+    }
+  }
+}

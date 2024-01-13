@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:dead_bubble_coral_block",
-  "base": "minecraft:dead_bubble_coral",
-  "add": {
-    "sea": 5
-  }
-}

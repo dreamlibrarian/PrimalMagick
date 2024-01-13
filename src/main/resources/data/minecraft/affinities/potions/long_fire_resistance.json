@@ -1,7 +1,0 @@
-{
-  "type": "potion_bonus",
-  "target": "minecraft:long_fire_resistance",
-  "bonus": {
-    "infernal": 5
-  }
-}

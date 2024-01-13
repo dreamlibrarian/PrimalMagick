@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:purpur_block",
-  "set": {
-    "earth": 5,
-    "void": 5
-  }
-}

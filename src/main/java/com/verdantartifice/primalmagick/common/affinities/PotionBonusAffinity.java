@@ -1,6 +1,7 @@
 package com.verdantartifice.primalmagick.common.affinities;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -10,6 +11,7 @@ import com.google.gson.JsonSyntaxException;
 import com.verdantartifice.primalmagick.common.sources.SourceList;
 import com.verdantartifice.primalmagick.common.util.JsonUtils;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -35,9 +37,9 @@ public class PotionBonusAffinity extends AbstractAffinity {
     }
 
     @Override
-    protected SourceList calculateTotal(@Nullable RecipeManager recipeManager, @Nonnull List<ResourceLocation> history) {
+    protected CompletableFuture<SourceList> calculateTotalAsync(@Nullable RecipeManager recipeManager, @Nonnull RegistryAccess registryAccess, @Nonnull List<ResourceLocation> history) {
         if (this.bonusValues != null) {
-            return this.bonusValues;
+            return CompletableFuture.completedFuture(this.bonusValues);
         } else {
             throw new IllegalStateException("Potion bonus affinity has no values defined");
         }

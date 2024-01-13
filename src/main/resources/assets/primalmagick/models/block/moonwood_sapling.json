@@ -1,6 +1,0 @@
-{
-    "parent": "block/cross",
-    "textures": {
-        "cross": "primalmagick:block/moonwood_sapling"
-    }
-}

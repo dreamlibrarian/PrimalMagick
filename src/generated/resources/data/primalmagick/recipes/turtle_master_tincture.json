@@ -1,0 +1,37 @@
+{
+  "type": "primalmagick:concocting",
+  "group": "turtle_master",
+  "ingredients": [
+    {
+      "type": "forge:partial_nbt",
+      "items": [
+        "primalmagick:concoction"
+      ],
+      "nbt": "{ConcoctionType:\"water\",Potion:\"minecraft:water\"}"
+    },
+    {
+      "item": "primalmagick:essence_dust_sea"
+    },
+    {
+      "tag": "forge:crops/nether_wart"
+    },
+    {
+      "item": "minecraft:turtle_helmet"
+    }
+  ],
+  "mana": {
+    "sources": {
+      "infernal": 1
+    }
+  },
+  "research": "CONCOCTING_TINCTURES",
+  "result": {
+    "Count": 1,
+    "id": "primalmagick:concoction",
+    "tag": {
+      "ConcoctionDoses": 3,
+      "ConcoctionType": "tincture",
+      "Potion": "minecraft:turtle_master"
+    }
+  }
+}

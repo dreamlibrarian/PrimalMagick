@@ -1,7 +1,6 @@
 package com.verdantartifice.primalmagick.common.blocks.rituals;
 
 import java.awt.Color;
-import java.util.Random;
 
 import com.verdantartifice.primalmagick.PrimalMagick;
 import com.verdantartifice.primalmagick.client.fx.FxDispatcher;
@@ -14,7 +13,7 @@ import com.verdantartifice.primalmagick.common.util.VoxelShapeUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -36,7 +35,8 @@ import net.minecraft.world.level.block.state.StateDefinition.Builder;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.level.material.Material;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -50,10 +50,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class EntropySinkBlock extends BaseEntityBlock implements IRitualPropBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
-    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(new ResourceLocation(PrimalMagick.MODID, "block/entropy_sink"));
+    protected static final VoxelShape SHAPE = VoxelShapeUtils.fromModel(PrimalMagick.resource("block/entropy_sink"));
     
     public EntropySinkBlock() {
-        super(Block.Properties.of(Material.STONE).strength(3.5F).lightLevel((state) -> { 
+        super(Block.Properties.of().mapColor(MapColor.STONE).instrument(NoteBlockInstrument.BASEDRUM).strength(3.5F).lightLevel((state) -> { 
             return state.getValue(BlockStateProperties.LIT) ? 15 : 0; 
         }).sound(SoundType.STONE).noOcclusion());
         this.registerDefaultState(this.defaultBlockState().setValue(FACING, Direction.NORTH).setValue(LIT, Boolean.valueOf(false)));
@@ -98,7 +98,7 @@ public class EntropySinkBlock extends BaseEntityBlock implements IRitualPropBloc
     }
 
     @Override
-    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
+    public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, RandomSource rand) {
         // Show spell sparkles if receiving salt power
         if (this.isBlockSaltPowered(worldIn, pos)) {
             FxDispatcher.INSTANCE.spellTrail(pos.getX() + rand.nextDouble(), pos.getY() + rand.nextDouble(), pos.getZ() + rand.nextDouble(), Color.WHITE.getRGB());
@@ -125,13 +125,12 @@ public class EntropySinkBlock extends BaseEntityBlock implements IRitualPropBloc
 
     @Override
     public boolean isPropActivated(BlockState state, Level world, BlockPos pos) {
-        BlockEntity tile = world.getBlockEntity(pos);
-        return (tile instanceof EntropySinkTileEntity && ((EntropySinkTileEntity)tile).isGlowing());
+        return world.getBlockEntity(pos) instanceof EntropySinkTileEntity sink && sink.isGlowing();
     }
 
     @Override
     public String getPropTranslationKey() {
-        return "primalmagick.ritual.prop.entropy_sink";
+        return "ritual.primalmagick.prop.entropy_sink";
     }
 
     public float getUsageStabilityBonus(EssenceItem item) {

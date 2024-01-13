@@ -1,30 +1,26 @@
 package com.verdantartifice.primalmagick.common.items.misc;
 
-import java.util.Random;
-
-import com.verdantartifice.primalmagick.PrimalMagick;
-
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
-import net.minecraftforge.common.Tags;
 
 /**
- * Item definition for an earthshatter hammer.  Can be crafting with ore to break it into grit for
+ * Item definition for an earthshatter hammer.  Can be crafted with ore to break it into grit for
  * ore doubling.
  * 
  * @author Daedalus4096
  */
 public class EarthshatterHammerItem extends Item {
-    protected static final Random RNG = new Random();
+    protected static final RandomSource RNG = RandomSource.create();
     
     public EarthshatterHammerItem() {
-        super(new Item.Properties().tab(PrimalMagick.ITEM_GROUP).durability(255).rarity(Rarity.UNCOMMON));
+        super(new Item.Properties().durability(255).rarity(Rarity.UNCOMMON).setNoRepair());
     }
     
     @Override
-    public ItemStack getContainerItem(ItemStack stack) {
-        if (this.hasContainerItem(stack)) {
+    public ItemStack getCraftingRemainingItem(ItemStack stack) {
+        if (this.hasCraftingRemainingItem(stack)) {
             ItemStack newStack = stack.copy();
             newStack.hurt(1, RNG, null);
             return newStack;
@@ -34,12 +30,7 @@ public class EarthshatterHammerItem extends Item {
     }
     
     @Override
-    public boolean hasContainerItem(ItemStack stack) {
+    public boolean hasCraftingRemainingItem(ItemStack stack) {
         return stack.getItem() instanceof EarthshatterHammerItem && stack.getDamageValue() < stack.getMaxDamage();
-    }
-
-    @Override
-    public boolean isValidRepairItem(ItemStack toRepair, ItemStack repair) {
-        return repair.is(Tags.Items.INGOTS_IRON) || super.isValidRepairItem(toRepair, repair);
     }
 }

@@ -7,13 +7,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.ImmutableSet;
 import com.verdantartifice.primalmagick.common.affinities.AffinityManager;
@@ -29,7 +34,6 @@ import com.verdantartifice.primalmagick.common.stats.StatsPM;
 
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -37,7 +41,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
@@ -49,6 +53,8 @@ import net.minecraftforge.registries.ForgeRegistries;
  * @author Daedalus4096
  */
 public class ResearchManager {
+    private static final Logger LOGGER = LogManager.getLogger();
+
     // Hash codes of items that must be crafted to complete one or more research stages
     private static final Set<Integer> CRAFTING_REFERENCES = new HashSet<>();
     
@@ -62,12 +68,13 @@ public class ResearchManager {
     private static final Map<ResourceLocation, ResearchEntry> RECIPE_MAP = new HashMap<>();
     
     // Set of research keys whose children should not be shown in the Upcoming section of the grimoire
+    // TODO Convert into tag
     private static final Set<SimpleResearchKey> OPAQUE_RESEARCH = ImmutableSet.of(
             Source.BLOOD.getDiscoverKey(), 
             Source.INFERNAL.getDiscoverKey(), 
             Source.VOID.getDiscoverKey(), 
             Source.HALLOWED.getDiscoverKey(),
-            SimpleResearchKey.parse("t_discover_forbidden")
+            SimpleResearchKey.parse("t_discover_forbidden")     // FIXME Don't use SRK::parse
     );
     
     public static Set<Integer> getAllCraftingReferences() {
@@ -180,9 +187,14 @@ public class ResearchManager {
     }
     
     public static boolean completeResearch(@Nullable Player player, @Nullable SimpleResearchKey key, boolean sync) {
+        // Complete the given research, optionally syncing it to the player's client
+        return completeResearch(player, key, sync, true, true);
+    }
+    
+    public static boolean completeResearch(@Nullable Player player, @Nullable SimpleResearchKey key, boolean sync, boolean showNewFlags, boolean showPopups) {
         // Repeatedly progress the given research until it is completed, optionally syncing it to the player's client
         boolean retVal = false;
-        while (progressResearch(player, key, sync)) {
+        while (progressResearch(player, key, sync, showNewFlags, showPopups)) {
             retVal = true;
         }
         return retVal;
@@ -203,21 +215,19 @@ public class ResearchManager {
                         }
                         for (ResearchStage stage : entry.getStages()) {
                             // Complete any research required as a prerequisite for any of the entry's stages
-                            if (stage.getRequiredResearch() != null) {
-                                for (SimpleResearchKey requiredKey : stage.getRequiredResearch().getKeys()) {
-                                    completeResearch(player, requiredKey);
-                                }
+                            for (SimpleResearchKey requiredKey : stage.getRequiredResearch().getKeys()) {
+                                completeResearch(player, requiredKey, true, true, false);
                             }
                         }
                     }
                     
                     // Once all prerequisites are out of the way, complete this entry itself
-                    completeResearch(player, strippedKey);
+                    completeResearch(player, strippedKey, true, true, false);
                     
                     // Mark as updated any research entry that has a stage which requires completion of this entry
                     for (ResearchEntry searchEntry : ResearchEntries.getAllEntries()) {
                         for (ResearchStage searchStage : searchEntry.getStages()) {
-                            if (searchStage.getRequiredResearch() != null && searchStage.getRequiredResearch().contains(strippedKey)) {
+                            if (searchStage.getRequiredResearch().contains(strippedKey)) {
                                 knowledge.addResearchFlag(searchEntry.getKey(), IPlayerKnowledge.ResearchFlag.UPDATED);
                                 break;
                             }
@@ -243,10 +253,8 @@ public class ResearchManager {
                         }
                         for (ResearchStage stage : entry.getStages()) {
                             // Complete any research required as a prerequisite for any of the entry's stages
-                            if (stage.getRequiredResearch() != null) {
-                                for (SimpleResearchKey requiredKey : stage.getRequiredResearch().getKeys()) {
-                                    completeResearch(player, requiredKey);
-                                }
+                            for (SimpleResearchKey requiredKey : stage.getRequiredResearch().getKeys()) {
+                                completeResearch(player, requiredKey, true, true, false);
                             }
                         }
                     }
@@ -302,8 +310,8 @@ public class ResearchManager {
         if (player instanceof ServerPlayer serverPlayer) {
             ResearchEntry entry = ResearchEntries.getEntry(key);
             if (entry != null) {
-                RecipeManager recipeManager = serverPlayer.level.getRecipeManager();
-                Set<Recipe<?>> recipesToRemove = entry.getAllRecipeIds().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
+                RecipeManager recipeManager = serverPlayer.level().getRecipeManager();
+                Set<RecipeHolder<?>> recipesToRemove = entry.getAllRecipeIds().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
                 ArcaneRecipeBookManager.removeRecipes(recipesToRemove, serverPlayer);
                 serverPlayer.resetRecipes(recipesToRemove);
             }
@@ -323,10 +331,10 @@ public class ResearchManager {
     
     public static boolean progressResearch(@Nullable Player player, @Nullable SimpleResearchKey key, boolean sync) {
         // Progress the given research to its next stage and sync to the player's client
-        return progressResearch(player, key, sync, true);
+        return progressResearch(player, key, sync, true, true);
     }
     
-    public static boolean progressResearch(@Nullable Player player, @Nullable SimpleResearchKey key, boolean sync, boolean flags) {
+    public static boolean progressResearch(@Nullable Player player, @Nullable SimpleResearchKey key, boolean sync, boolean showNewFlags, boolean showPopups) {
         // Progress the given research to its next stage and optionally sync to the player's client
         if (player == null || key == null) {
             return false;
@@ -386,8 +394,8 @@ public class ResearchManager {
                 
                 // Add any unlocked recipes from the current stage to the player's arcane recipe book
                 if (player instanceof ServerPlayer serverPlayer) {
-                    RecipeManager recipeManager = serverPlayer.level.getRecipeManager();
-                    Set<Recipe<?>> recipesToUnlock = currentStage.getRecipes().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
+                    RecipeManager recipeManager = serverPlayer.level().getRecipeManager();
+                    Set<RecipeHolder<?>> recipesToUnlock = currentStage.getRecipes().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
                     ArcaneRecipeBookManager.addRecipes(recipesToUnlock, serverPlayer);
                     serverPlayer.awardRecipes(recipesToUnlock);
                 }
@@ -396,14 +404,25 @@ public class ResearchManager {
                 for (SimpleResearchKey sibling : currentStage.getSiblings()) {
                     completeResearch(player, sibling, sync);
                 }
+                
+                // Open any research to be revealed by the current stage
+                for (SimpleResearchKey revelation : currentStage.getRevelations()) {
+                    if (!knowledge.isResearchKnown(revelation)) {
+                        knowledge.addResearch(revelation);
+                        if (showPopups) {
+                            knowledge.addResearchFlag(revelation, IPlayerKnowledge.ResearchFlag.POPUP);
+                        }
+                        knowledge.addResearchFlag(revelation, IPlayerKnowledge.ResearchFlag.NEW);
+                    }
+                }
             }
             
             if (entryComplete && !entry.getAddenda().isEmpty() && player instanceof ServerPlayer serverPlayer) {
-                RecipeManager recipeManager = serverPlayer.level.getRecipeManager();
+                RecipeManager recipeManager = serverPlayer.level().getRecipeManager();
                 for (ResearchAddendum addendum : entry.getAddenda()) {
                     if (addendum.getRequiredResearch() == null || addendum.getRequiredResearch().isKnownByStrict(player)) {
                         // Add any unlocked recipes from this entry's addenda to the player's arcane recipe book
-                        Set<Recipe<?>> recipesToUnlock = addendum.getRecipes().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
+                        Set<RecipeHolder<?>> recipesToUnlock = addendum.getRecipes().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
                         ArcaneRecipeBookManager.addRecipes(recipesToUnlock, serverPlayer);
                         serverPlayer.awardRecipes(recipesToUnlock);
                         
@@ -421,11 +440,24 @@ public class ResearchManager {
             }
         }
         
+        if (Source.isSourceDiscoverKey(key)) {
+            // If unlocking a source, also unlock that source's sibling research, if any
+            Source source = Source.getSource(key);
+            if (source != null) {
+                LOGGER.debug("Unlocking sibling research for source {}", source.getTag());
+                for (SimpleResearchKey sibling : source.getSiblings()) {
+                    completeResearch(player, sibling, sync);
+                }
+            }
+        }
+        
         if (entryComplete) {
             if (sync) {
                 // If the entry has been completed and we're syncing, add the appropriate flags
-                knowledge.addResearchFlag(key, IPlayerKnowledge.ResearchFlag.POPUP);
-                if (flags) {
+                if (showPopups) {
+                    knowledge.addResearchFlag(key, IPlayerKnowledge.ResearchFlag.POPUP);
+                }
+                if (showNewFlags) {
                     knowledge.addResearchFlag(key, IPlayerKnowledge.ResearchFlag.NEW);
                 }
             }
@@ -436,8 +468,8 @@ public class ResearchManager {
                     for (ResearchAddendum addendum : searchEntry.getAddenda()) {
                         if (addendum.getRequiredResearch() != null && addendum.getRequiredResearch().contains(key) && addendum.getRequiredResearch().isKnownByStrict(player)) {
                             // Announce completion of the addendum
-                            Component nameComp = new TranslatableComponent(searchEntry.getNameTranslationKey());
-                            player.sendMessage(new TranslatableComponent("event.primalmagick.add_addendum", nameComp), Util.NIL_UUID);
+                            Component nameComp = Component.translatable(searchEntry.getNameTranslationKey());
+                            player.sendSystemMessage(Component.translatable("event.primalmagick.add_addendum", nameComp));
                             knowledge.addResearchFlag(searchEntry.getKey(), IPlayerKnowledge.ResearchFlag.UPDATED);
                             
                             // Process attunement grants
@@ -451,8 +483,8 @@ public class ResearchManager {
                             
                             // Add any unlocked recipes to the player's arcane recipe book
                             if (player instanceof ServerPlayer serverPlayer) {
-                                RecipeManager recipeManager = serverPlayer.level.getRecipeManager();
-                                Set<Recipe<?>> recipesToUnlock = addendum.getRecipes().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
+                                RecipeManager recipeManager = serverPlayer.level().getRecipeManager();
+                                Set<RecipeHolder<?>> recipesToUnlock = addendum.getRecipes().stream().map(r -> recipeManager.byKey(r).orElse(null)).filter(Objects::nonNull).collect(Collectors.toSet());
                                 ArcaneRecipeBookManager.addRecipes(recipesToUnlock, serverPlayer);
                                 serverPlayer.awardRecipes(recipesToUnlock);
                             }
@@ -460,6 +492,26 @@ public class ResearchManager {
                             // Grant any unlocked sibling research
                             for (SimpleResearchKey sibling : addendum.getSiblings()) {
                                 completeResearch(player, sibling, sync);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If completing this entry finished its discipline, reveal any appropriate finale research
+            if (entry != null) {
+                ResearchDiscipline discipline = ResearchDisciplines.getDiscipline(entry.getDisciplineKey());
+                if (discipline != null) {
+                    for (ResearchEntry finaleEntry : discipline.getFinaleEntries()) {
+                        SimpleResearchKey finaleKey = finaleEntry.getKey();
+                        if (!knowledge.isResearchKnown(finaleKey)) {
+                            boolean shouldUnlock = finaleEntry.getFinaleDisciplines().stream().map(ResearchDisciplines::getDiscipline).filter(Objects::nonNull).flatMap(d -> d.getEntries().stream()).filter(e -> e.getFinaleDisciplines().isEmpty() && !e.isFinaleExempt()).allMatch(e -> e.isComplete(player));
+                            if (shouldUnlock) {
+                                knowledge.addResearch(finaleKey);
+                                if (showPopups) {
+                                    knowledge.addResearchFlag(finaleKey, IPlayerKnowledge.ResearchFlag.POPUP);
+                                }
+                                knowledge.addResearchFlag(finaleKey, IPlayerKnowledge.ResearchFlag.NEW);
                             }
                         }
                     }
@@ -475,11 +527,11 @@ public class ResearchManager {
         return true;
     }
     
-    public static boolean addKnowledge(Player player, IPlayerKnowledge.KnowledgeType type, int points) {
+    public static boolean addKnowledge(Player player, KnowledgeType type, int points) {
         return addKnowledge(player, type, points, true);
     }
     
-    public static boolean addKnowledge(Player player, IPlayerKnowledge.KnowledgeType type, int points, boolean scheduleSync) {
+    public static boolean addKnowledge(Player player, KnowledgeType type, int points, boolean scheduleSync) {
         // Add the given number of knowledge points to the player and sync to their client
         IPlayerKnowledge knowledge = PrimalMagickCapabilities.getKnowledge(player).orElse(null);
         if (knowledge == null) {
@@ -493,9 +545,9 @@ public class ResearchManager {
         if (points > 0) {
             int levelsAfter = knowledge.getKnowledge(type);
             int delta = levelsAfter - levelsBefore;
-            if (type == IPlayerKnowledge.KnowledgeType.OBSERVATION) {
+            if (type == KnowledgeType.OBSERVATION) {
                 StatsManager.incrementValue(player, StatsPM.OBSERVATIONS_MADE, delta);
-            } else if (type == IPlayerKnowledge.KnowledgeType.THEORY) {
+            } else if (type == KnowledgeType.THEORY) {
                 StatsManager.incrementValue(player, StatsPM.THEORIES_FORMED, delta);
             }
             for (int index = 0; index < delta; index++) {
@@ -552,22 +604,68 @@ public class ResearchManager {
         if (stack == null || stack.isEmpty() || player == null) {
             return false;
         }
-        SourceList affinities = AffinityManager.getInstance().getAffinityValues(stack, player.level);
-        if ((affinities == null || affinities.isEmpty()) && (!(player instanceof ServerPlayer) || !hasScanTriggers((ServerPlayer)player, stack.getItem()))) {
-            // If the given itemstack has no affinities, consider it already scanned
+        Optional<SourceList> affinitiesOpt = AffinityManager.getInstance().getAffinityValues(stack, player.level());
+        if (affinitiesOpt.isPresent()) {
+            SourceList affinities = affinitiesOpt.get();
+            if ((affinities == null || affinities.isEmpty()) && (!(player instanceof ServerPlayer) || !hasScanTriggers((ServerPlayer)player, stack.getItem()))) {
+                // If the given itemstack has no affinities, consider it already scanned
+                return true;
+            }
+            SimpleResearchKey key = SimpleResearchKey.parseItemScan(stack);
+            return (key != null && key.isKnownByStrict(player));
+        } else {
+            // If the affinities for the item are not ready yet, temporarily consider the item scanned
             return true;
         }
-        SimpleResearchKey key = SimpleResearchKey.parseItemScan(stack);
-        return (key != null && key.isKnownByStrict(player));
+    }
+    
+    public static CompletableFuture<Boolean> isScannedAsync(@Nullable ItemStack stack, @Nullable Player player) {
+        if (stack == null || stack.isEmpty() || player == null) {
+            return CompletableFuture.completedFuture(Boolean.FALSE);
+        }
+        
+        return AffinityManager.getInstance().getAffinityValuesAsync(stack, player.level()).thenApply(affinities -> {
+            if ((affinities == null || affinities.isEmpty()) && (!(player instanceof ServerPlayer) || !hasScanTriggers((ServerPlayer)player, stack.getItem()))) {
+                // If the given itemstack has no affinities, consider it already scanned
+                return true;
+            }
+            SimpleResearchKey key = SimpleResearchKey.parseItemScan(stack);
+            return (key != null && key.isKnownByStrict(player));
+        });
     }
     
     public static boolean isScanned(@Nullable EntityType<?> type, @Nullable Player player) {
         if (type == null || player == null) {
             return false;
         }
-        // TODO Check entity type affinities
-        SimpleResearchKey key = SimpleResearchKey.parseEntityScan(type);
-        return (key != null && key.isKnownByStrict(player));
+        Optional<SourceList> affinitiesOpt = AffinityManager.getInstance().getAffinityValues(type, player.level().registryAccess());
+        if (affinitiesOpt.isPresent()) {
+            SourceList affinities = affinitiesOpt.get();
+            if ((affinities == null || affinities.isEmpty()) && (!(player instanceof ServerPlayer) || !hasScanTriggers((ServerPlayer)player, type))) {
+                // If the given entity has no affinities, consider it already scanned
+                return true;
+            }
+            SimpleResearchKey key = SimpleResearchKey.parseEntityScan(type);
+            return (key != null && key.isKnownByStrict(player));
+        } else {
+            // If the affinities for the entity are not ready yet, temporarily consider the entity scanned
+            return true;
+        }
+    }
+    
+    public static CompletableFuture<Boolean> isScannedAsync(@Nullable EntityType<?> type, @Nullable Player player) {
+        if (type == null || player == null) {
+            return CompletableFuture.completedFuture(Boolean.FALSE);
+        }
+        
+        return AffinityManager.getInstance().getAffinityValuesAsync(type, player.level().registryAccess()).thenApply(affinities -> {
+            if ((affinities == null || affinities.isEmpty()) && (!(player instanceof ServerPlayer) || !hasScanTriggers((ServerPlayer)player, type))) {
+                // If the given entity has no affinities, consider it already scanned
+                return true;
+            }
+            SimpleResearchKey key = SimpleResearchKey.parseEntityScan(type);
+            return (key != null && key.isKnownByStrict(player));
+        });
     }
 
     public static boolean setScanned(@Nullable ItemStack stack, @Nullable ServerPlayer player) {
@@ -591,10 +689,11 @@ public class ResearchManager {
         SimpleResearchKey key = SimpleResearchKey.parseItemScan(stack);
         if (key != null && knowledge.addResearch(key)) {
             // Determine how many observation points the itemstack is worth and add those to the player's knowledge
-            int obsPoints = getObservationPoints(stack, player.getCommandSenderWorld());
-            if (obsPoints > 0) {
-                addKnowledge(player, IPlayerKnowledge.KnowledgeType.OBSERVATION, obsPoints, false);
-            }
+            getObservationPointsAsync(stack, player.getCommandSenderWorld()).thenAccept(obsPoints -> {
+                if (obsPoints > 0) {
+                    addKnowledge(player, KnowledgeType.OBSERVATION, obsPoints, false);
+                }
+            });
             
             // Increment the items analyzed stat
             StatsManager.incrementValue(player, StatsPM.ITEMS_ANALYZED);
@@ -626,10 +725,11 @@ public class ResearchManager {
         SimpleResearchKey key = SimpleResearchKey.parseEntityScan(type);
         if (key != null && knowledge.addResearch(key)) {
             // Determine how many observation points the entity is worth and add those to the player's knowledge
-            int obsPoints = getObservationPoints(type);
-            if (obsPoints > 0) {
-                addKnowledge(player, IPlayerKnowledge.KnowledgeType.OBSERVATION, obsPoints, false);
-            }
+            getObservationPointsAsync(type, player.getCommandSenderWorld()).thenAccept(obsPoints -> {
+                if (obsPoints > 0) {
+                    addKnowledge(player, KnowledgeType.OBSERVATION, obsPoints, false);
+                }
+            });
             
             // Increment the entities analyzed stat
             StatsManager.incrementValue(player, StatsPM.ENTITIES_ANALYZED);
@@ -660,23 +760,31 @@ public class ResearchManager {
         ItemStack stack;
         
         // Iterate over all registered items in the game
+        List<CompletableFuture<Integer>> obsPointsFutures = new ArrayList<>();
         for (Item item : ForgeRegistries.ITEMS) {
             // Generate a research key for the itemstack and add that research to the player
             stack = new ItemStack(item);
-            key = SimpleResearchKey.parseItemScan(stack);
-            if (key != null && knowledge.addResearch(key)) {
-                count++;
-    
-                // Determine how many observation points the itemstack is worth and add those to the player's knowledge
-                int obsPoints = getObservationPoints(stack, player.getCommandSenderWorld());
-                if (obsPoints > 0) {
-                    addKnowledge(player, IPlayerKnowledge.KnowledgeType.OBSERVATION, obsPoints, false);
+            if (!stack.isEmpty()) { // Skip over air
+                key = SimpleResearchKey.parseItemScan(stack);
+                if (key != null && knowledge.addResearch(key)) {
+                    count++;
+        
+                    // Determine how many observation points the itemstack is worth and queue them up to add to the player's knowledge
+                    obsPointsFutures.add(getObservationPointsAsync(stack, player.getCommandSenderWorld()));
+                    
+                    // Check to see if any scan triggers need to be run for the item
+                    checkScanTriggers(player, item);
                 }
-                
-                // Check to see if any scan triggers need to be run for the item
-                checkScanTriggers(player, item);
             }
         }
+        
+        // Once all items are processed, then add any accrued observation points to the player's knowledge
+        Util.sequence(obsPointsFutures).thenAccept(obsPointsList -> {
+            int obsPoints = obsPointsList.stream().mapToInt(i -> i).sum();
+            if (obsPoints > 0) {
+                addKnowledge(player, KnowledgeType.OBSERVATION, obsPoints, false);
+            }
+        });
         
         // If any items were successfully scanned, sync the research/knowledge changes to the player's client
         if (count > 0) {
@@ -687,15 +795,14 @@ public class ResearchManager {
         return count;
     }
 
-    private static int getObservationPoints(@Nonnull ItemStack stack, @Nonnull Level world) {
+    private static CompletableFuture<Integer> getObservationPointsAsync(@Nonnull ItemStack stack, @Nonnull Level world) {
         // Calculate observation points for the itemstack based on its affinities
-        return getObservationPoints(AffinityManager.getInstance().getAffinityValues(stack, world));
+        return AffinityManager.getInstance().getAffinityValuesAsync(stack, world).thenApply(ResearchManager::getObservationPoints);
     }
     
-    private static int getObservationPoints(@Nonnull EntityType<?> type) {
-        // TODO Get affinities from affinity manager for entity type
-        SourceList affinities = new SourceList();
-        return getObservationPoints(affinities);
+    private static CompletableFuture<Integer> getObservationPointsAsync(@Nonnull EntityType<?> type, @Nonnull Level level) {
+        // Get affinities from affinity manager for entity type
+        return AffinityManager.getInstance().getAffinityValuesAsync(type, level.registryAccess()).thenApply(ResearchManager::getObservationPoints);
     }
     
     private static int getObservationPoints(@Nullable SourceList affinities) {

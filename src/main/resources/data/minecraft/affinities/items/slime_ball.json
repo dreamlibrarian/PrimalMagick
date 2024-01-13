@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:slime_ball",
-  "set": {
-    "sea": 5,
-    "blood": 2
-  }
-}

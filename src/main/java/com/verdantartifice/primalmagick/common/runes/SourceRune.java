@@ -1,8 +1,12 @@
 package com.verdantartifice.primalmagick.common.runes;
 
+import java.util.function.Supplier;
+
 import javax.annotation.Nonnull;
 
-import net.minecraft.resources.ResourceLocation;
+import com.verdantartifice.primalmagick.common.research.ResearchName;
+import com.verdantartifice.primalmagick.common.sources.Source;
+
 import net.minecraft.world.item.Rarity;
 
 /**
@@ -11,16 +15,19 @@ import net.minecraft.world.item.Rarity;
  * @author Daedalus4096
  */
 public class SourceRune extends Rune {
-    public SourceRune(@Nonnull String tag) {
-        super(tag, Rarity.COMMON, false);
-    }
+    protected final Source source;
     
-    public SourceRune(@Nonnull ResourceLocation id) {
-        super(id, Rarity.COMMON, false);
+    public SourceRune(@Nonnull String tag, @Nonnull Supplier<ResearchName> discoveryKey, @Nonnull Source source) {
+        super(tag, discoveryKey, Rarity.COMMON, false, -1);
+        this.source = source;
     }
     
     @Override
     public RuneType getType() {
         return RuneType.SOURCE;
+    }
+    
+    public Source getSource() {
+        return this.source;
     }
 }

@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:nether_brick",
-  "base": "minecraft:brick",
-  "add": {
-    "infernal": 5
-  }
-}

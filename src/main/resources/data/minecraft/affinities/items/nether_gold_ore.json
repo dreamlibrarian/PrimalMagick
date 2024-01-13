@@ -1,8 +1,0 @@
-{
-  "type": "item",
-  "target": "minecraft:nether_gold_ore",
-  "base": "minecraft:netherrack",
-  "add": {
-    "earth": 10
-  }
-}
